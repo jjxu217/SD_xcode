@@ -273,7 +273,7 @@
 		7ECD27B82238B49600F11974 /* libilocplex.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libilocplex.a; path = "../../../../../Applications/CPLEX_Studio128/cplex/lib/x86-64_osx/static_pic/libilocplex.a"; sourceTree = "<group>"; };
 		7ECD27B92238B49600F11974 /* libcplexdistmip.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcplexdistmip.a; path = "../../../../../Applications/CPLEX_Studio128/cplex/lib/x86-64_osx/static_pic/libcplexdistmip.a"; sourceTree = "<group>"; };
 		7ECD27BA2238B49600F11974 /* libcplex.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcplex.a; path = "../../../../../Applications/CPLEX_Studio128/cplex/lib/x86-64_osx/static_pic/libcplex.a"; sourceTree = "<group>"; };
-		7ECD27C42238C13E00F11974 /* config.sd */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = config.sd; path = ../../SD_JX/config.sd; sourceTree = "<group>"; };
+		7ECD27C722397EC200F11974 /* config.sd */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.sd; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -313,7 +313,8 @@
 		7ECD263B2238B2B900F11974 /* SD_xcode */ = {
 			isa = PBXGroup;
 			children = (
-				7ECD27C42238C13E00F11974 /* config.sd */,
+				7ECD27C722397EC200F11974 /* config.sd */,
+				7ECD27C62239779700F11974 /* spOutput */,
 				7ECD26432238B32B00F11974 /* spInput */,
 				7ECD273C2238B32B00F11974 /* src */,
 			);
@@ -1008,6 +1009,13 @@
 				7ECD27B22238B45600F11974 /* CoreFoundation.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		7ECD27C62239779700F11974 /* spOutput */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = spOutput;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

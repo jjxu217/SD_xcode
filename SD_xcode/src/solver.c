@@ -7,11 +7,12 @@
 
 #include "utils.h"
 #include "solver.h"
+#include <ilcplex/cplex.h>
 
 #define DEBUG 1
 
 extern string 	outputDir;
-ENVptr	env;
+ENVptr	env = NULL;
 
 int solveProblem(LPptr lp, string pname, int type, int *status) {
 	int		aggres = 0;
@@ -161,7 +162,7 @@ int getBasis(LPptr lp, intvec cstat, intvec rstat){
 		if ( status )
 			solverErrmsg(status);
 	}
-	else if ( cstat != NULL ) {
+    else {
 		status = CPXgetbase(env, lp, cstat+1, NULL);
 		if ( status )
 			solverErrmsg(status);
@@ -181,9 +182,9 @@ void openSolver(){
 	}
 
 #ifdef DEBUG
-    status = CPXsetintparam (env, CPXPARAM_ScreenOutput, CPX_ON);
+    //status = CPXsetintparam (env, CPXPARAM_ScreenOutput, CPX_ON);
     //status = CPXsetintparam(env, PARAM_SCRIND, ON);
-    /*status = setIntParam(PARAM_SCRIND, ON);*/
+    status = setIntParam(PARAM_SCRIND, ON);
 #else
     status = setIntParam(PARAM_SCRIND, OFF);
 #endif

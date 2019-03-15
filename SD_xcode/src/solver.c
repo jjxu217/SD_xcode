@@ -289,7 +289,7 @@ LPptr setupProblem(string name, int type, int numcols, int numrows, int objsense
 		return NULL;
 	}
 
-    //TODO: check ctype, remain 1st stge still MIP, Jiajun
+    //Jiajun: If the problem is MIP or MIQP, remain this type
 	if ( type == PROB_MILP || type == PROB_MIQP ) {
 		if ( !(indices = (intvec) arr_alloc(numcols, int)) )
 			errMsg("allocation", "setupProblem", "indices", 0);
@@ -302,6 +302,9 @@ LPptr setupProblem(string name, int type, int numcols, int numrows, int objsense
 		mem_free(indices);
 	}
 
+#ifdef DEBUG
+    writeProblem(lp, "after_change_ctype.lp");
+#endif
 	return lp;
 }//END setupProblem()
 

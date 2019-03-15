@@ -445,7 +445,7 @@ oneProblem *newMaster(oneProblem *orig, double lb) {
 		return NULL;
 	}
 
-#if defined(SETUP_CHECK)
+#if defined(DEBUG)
 	if ( writeProblem(master->lp, "newMaster.lp") ) {
 		errMsg("solver", "newMaster", "failed to write master problem to file", 0);
 		return NULL;

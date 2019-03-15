@@ -168,7 +168,7 @@ cellType *newCell(stocType *stoc, probType **prob, vector xk) {
 	cell->time.repTime = cell->time.iterTime = cell->time.masterIter = cell->time.subprobIter = cell->time.optTestIter = cell->time.argmaxIter = 0.0;
 	cell->time.iterAccumTime = cell->time.masterAccumTime = cell->time.subprobAccumTime = cell->time.optTestAccumTime = cell->time.argmaxAccumTime = 0.0;
 
-    //Jiajun TODO:construct the MIP instead
+    //Jiajun TODO:construct the MIQP instead?
 	/* construct the QP using the current incumbent */
 	if ( config.MASTER_TYPE == PROB_QP ) {
 		if ( constructQP(prob[0], cell, cell->incumbX, cell->quadScalar) ) {

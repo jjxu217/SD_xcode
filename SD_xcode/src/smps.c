@@ -67,12 +67,19 @@ oneProblem *readCore(string inputDir, string probName) {
 	}
 
 	/* NAME section: read problem name and compare with that read earlier */
-	if ( fgets(line, sizeof line, fptr) != NULL )
-		sscanf(line, "%s %s", field1, field2);
-	else {
-		errMsg("read", "readCore", "failed to read the problem name", 0);
-		return NULL;
-	}
+    if ( fgets(line, sizeof line, fptr) != NULL )
+        sscanf(line, "%s", field1);
+    else {
+        errMsg("read", "readCore", "failed to read the problem name", 0);
+        return NULL;
+    }
+    /*ignore the lines started with '*' */
+    while (!(strncmp(field1, "*", 1))){
+        if ( fgets(line, sizeof line, fptr) != NULL )
+            sscanf(line, "%s", field1);
+    }
+    sscanf(line, "%s %s", field1, field2);
+   
 	if ( !(strncmp(field1, "NAME", 4)) )
 		if( strcmp(probName, field2) ) {
 			errMsg("read", "readCore", "problem name does not match, in NAME section", 0);
@@ -90,6 +97,10 @@ oneProblem *readCore(string inputDir, string probName) {
 		return NULL;
 	}
 
+#if defined(DEBUG)
+    writeProblem(lp, "core.lp");
+#endif
+    
 	/* Allocate memory to the elements of problem and assign default values*/
 	orig = (oneProblem *) mem_malloc(sizeof(oneProblem));
 	orig->lp = lp;

@@ -57,19 +57,21 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 			prob[t]->sp->cstorsz = orig->cname[tim->col[t+1]] - orig->cname[tim->col[t]];
 			rOffset += prob[t]->sp->rstorsz;
 			cOffset += prob[t]->sp->cstorsz;
+            prob[t]->sp->type = PROB_MILP; //first stage MIP
 		}
 		else {
 			prob[t]->sp->mar = prob[t]->sp->marsz = orig->mar - tim->row[t];
 			prob[t]->sp->mac = prob[t]->sp->macsz = orig->mac - tim->col[t];
 			prob[t]->sp->rstorsz = orig->rstorsz - rOffset;
 			prob[t]->sp->cstorsz = orig->cstorsz - cOffset;
+            prob[t]->sp->type = PROB_LP; //second stage LP
 		}
 		prob[t]->sp->numInt = 0;
 		prob[t]->sp->numBin = 0;
 		prob[t]->sp->matsz = 0;
 		prob[t]->sp->numnz = 0;
 		prob[t]->sp->objsen = orig->objsen;
-		prob[t]->sp->type = PROB_LP;
+		
 
 		/* stage oneProblem */
 		if(!(prob[t]->sp->name = (string) arr_alloc(NAMESIZE, char)))
@@ -208,8 +210,8 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 		}
 
 		/* if integer or binary variables are encountered, then label the stage problem as a mixed integer LP */
-		if ( prob[t]->sp->numInt + prob[t]->sp->numBin > 0 )
-			prob[t]->sp->type = PROB_MILP;
+//        if ( prob[t]->sp->numInt + prob[t]->sp->numBin > 0 )
+//            prob[t]->sp->type = PROB_MILP;
 
 		/* copy row name of non-terminal stage */
 		m = 0;
@@ -244,12 +246,13 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 		prob[t]->sp->objx[k] = orig->objx[m];
 		prob[t]->sp->bdl[k] = orig->bdl[m];
 		prob[t]->sp->bdu[k] = orig->bdu[m];
-		if (orig->ctype[m] != 'C') {
-			errMsg("setup", "newProb", "integer variable in non-root stage",0);
-			return NULL;
-		}
-		else
-			prob[t]->sp->ctype[k] = orig->ctype[m];
+//        if (orig->ctype[m] != 'C') {
+//            errMsg("setup", "newProb", "integer variable in non-root stage",0);
+//            return NULL;
+//        }
+//        else
+//            prob[t]->sp->ctype[k] = orig->ctype[m];
+        prob[t]->sp->ctype[k] = 'C'; //Set 2nd stage variable as continuous variables
 		prob[t]->sp->cname[k] = orig->cname[m] + cOffset;
 		prob[t]->sp->matcnt[k] = 0;
 		if ( orig->matcnt[m] > 0 )
@@ -471,7 +474,9 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 }//END newProb()
 
 /* setup and solve the original problem _orig_ with expected values for all random variables provided in _stoc_. If the problem is an mixed-integer program,
- *  then a relaxed problem is solved. The function returns a vector of mean value solutions, if there is an error it returns NULL.*/
+ *  then a relaxed problem is solved. The function returns a vector of mean value solutions, if there is an error it returns NULL.
+ UPDATE by Jiajun : If the problem is an mixed-integer program,
+ *  then solve it as a MIP.*/
 vector meanProblem(oneProblem *orig, stocType *stoc) {
 	vector	xk;
 	double	obj = 0.0;
@@ -484,7 +489,7 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
 		errMsg("setup", "meanProblem", "failed to setup the mean problem", 0);
 		return NULL;
 	}
-    //Jiajun TODO:  No need, since RHS is constant
+    
 	/* change the coefficients and right-hand side to mean values */
 	for (n = 0; n < stoc->numOmega; n++ ) {
 		status = changeCoef(orig->lp, stoc->row[n], stoc->col[n], stoc->mean[n]);
@@ -493,15 +498,16 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
 			return NULL;
 		}
 	}
-    //Jiaju TODO: Still solve MIP, 1st stage variables are Binary
-	/* change the problem type to solve the relaxed mean value problem */
-	if ( orig->type == PROB_MILP || orig->type == PROB_MIQP ) {
-		status = changeProbType(orig->lp, PROB_LP);
-		if ( status ) {
-			errMsg("solver", "meanProblem", "failed to relax the mixed-integer program", 0);
-			return NULL;
-		}
-	}
+    
+	/* change the problem type to solve the relaxed mean value problem ,
+     Jiajun: No need, if the problem is MIP, solve it as MIP*/
+//    if ( orig->type == PROB_MILP || orig->type == PROB_MIQP ) {
+//        status = changeProbType(orig->lp, PROB_LP);
+//        if ( status ) {
+//            errMsg("solver", "meanProblem", "failed to relax the mixed-integer program", 0);
+//            return NULL;
+//        }
+//    }
 
 	/* write the mean value problem */
 	status = writeProblem(orig->lp, "original.lp");
@@ -510,10 +516,10 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
 		return NULL;
 	}
 
-    //Jiajun Question: orig is a QP problem?
+    //Jiajun UPDATE: solve it as the original type
 	/* solve the mean value problem */
 	changeLPSolverType(ALG_AUTOMATIC);
-	status = solveProblem(orig->lp, orig->name, PROB_QP, &status);
+    status = solveProblem(orig->lp, orig->name, orig->type, &status);
 	if ( status ) {
 		errMsg("setup", "meanProblem", "failed to solve mean value problem", 0);
 		return NULL;
@@ -525,8 +531,8 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
 
     //Jiaju TODO: change the type
 	/* print results */
-	obj = getObjective(orig->lp, PROB_LP);
-	printf("Optimal objective function value for (relaxed) mean value problem = %lf\n", obj);
+	obj = getObjective(orig->lp, orig->type);
+	printf("Optimal objective function value for mean value problem(Problem Type %d) = %lf\n", orig->type, obj);
 
 	/* obtain the primal solution */
 	getPrimal(orig->lp,	xk, orig->mac);
@@ -570,10 +576,10 @@ vector calcLowerBound(oneProblem *orig, timeType *tim, stocType *stoc) {
 		errMsg("allocation", "getLowerBound", "beta", 0);
 
 	/* obtain dual solutions from the mean value solve */
-	if ( getDual(orig->lp, duals, orig->mar) ) {
-		errMsg("setup", "getLowerBound", "failed to obtain dual for the mean value problem", 0);
-		return NULL;
-	}
+//    if ( getDual(orig->lp, duals, orig->mar) ) {
+//        errMsg("setup", "getLowerBound", "failed to obtain dual for the mean value problem", 0);
+//        return NULL;
+//    }
 
 	printf("Lower bounds computed = ");
 
@@ -681,12 +687,12 @@ vector calcLowerBound(oneProblem *orig, timeType *tim, stocType *stoc) {
 	freeSparseVector(bBar); freeSparseMatrix(Cbar);
 
 	/* change the problem type back to its original form */
-	if ( orig->type == PROB_MILP ) {
-		if ( changeProbType(orig->lp, PROB_MILP) ) {
-			errMsg("solver", "calcLowerBound", "failed to relax the mean value problem", 0);
-			return NULL;
-		}
-	}
+//    if ( orig->type == PROB_MILP ) {
+//        if ( changeProbType(orig->lp, PROB_MILP) ) {
+//            errMsg("solver", "calcLowerBound", "failed to relax the mean value problem", 0);
+//            return NULL;
+//        }
+//    }
 
 	return lb;
 }//END calcLowerBound()

@@ -237,16 +237,24 @@ oneProblem *newSubprob(oneProblem *sp) {
 		return NULL;
 	}
 
-#if 0
-	int     status;
-	char probName[NAMESIZE];
-	sprintf(probName,"newSubprob%d.lp", agent);
-	status = writeProblem(scell->sp->lp, probName);
-	if ( status ) {
-		errMsg("write problem", "new_subprob", "failed to write subproblems problem to file",0);
-		return NULL;
-	}
+#ifdef DEBUG
+    int     status;
+    status = writeProblem(sp->lp, "newSubPorblem.lp");
+    if ( status ) {
+        errMsg("write problem", "new_subprob", "failed to write subproblems problem to file",0);
+        return NULL;
+    }
 #endif
+//#ifdef 0
+//    int     status;
+//    char probName[NAMESIZE];
+//    sprintf(probName,"newSubprob%d.lp", agent);
+//    status = writeProblem(scell->sp->lp, probName);
+//    if ( status ) {
+//        errMsg("write problem", "new_subprob", "failed to write subproblems problem to file",0);
+//        return NULL;
+//    }
+//#endif
 
 	return sp;
 }//END new_subprob

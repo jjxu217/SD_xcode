@@ -1218,8 +1218,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = JBP2638P2L;
+				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = (
+					"DEBUG=1",
+					"DECOMPOSE_CHECK=1",
+				);
 				HEADER_SEARCH_PATHS = (
 					/Applications/CPLEX_Studio128/cplex/include,
 					/Applications/CPLEX_Studio128/concert/include,
@@ -1237,6 +1242,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = JBP2638P2L;
 				HEADER_SEARCH_PATHS = (

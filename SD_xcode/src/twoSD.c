@@ -14,6 +14,7 @@
 #include <ilcplex/cplex.h>
 #include <unistd.h>
 
+
 long long	MEM_USED = 0;	/* Amount of memory allocated each iteration */
 string   	outputDir;		/* output directory */
 configType	config;			/* algorithm tuning parameters */
@@ -104,13 +105,13 @@ int readConfig() {
 	char	line[2*BLOCKSIZE], comment[2*BLOCKSIZE];
 	int 	status, r2 = 1, maxReps = 30;
 
-    char cwd[PATH_MAX];
-    if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        printf("Current working dir: %s\n", cwd);
-    } else {
-        perror("getcwd() error");
-        return 1;
-    }
+//    char cwd[PATH_MAX];
+//    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+//        printf("Current working dir: %s\n", cwd);
+//    } else {
+//        perror("getcwd() error");
+//        return 1;
+//    }
     
 	fptr = fopen("config.sd", "r");
 	if ( fptr == NULL ) {

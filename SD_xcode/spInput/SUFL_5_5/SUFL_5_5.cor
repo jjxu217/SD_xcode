@@ -1,11 +1,12 @@
 * Source:     Pyomo MPS Writer
 * Format:     Free MPS
 *
-NAME Scenario1
+NAME SUFL_5_5
 OBJSENSE
  MIN
 ROWS
  N  x31
+ G  c_g_1
  E  c_e_x32_
  E  c_e_x33_
  E  c_e_x34_
@@ -39,30 +40,35 @@ ROWS
  E  c_e_ONE_VAR_CONSTANT
 COLUMNS
      x1 x31 30
+     x1 c_g_1     1
      x1 c_u_x37_ -1
      x1 c_u_x38_ -1
      x1 c_u_x39_ -1
      x1 c_u_x40_ -1
      x1 c_u_x41_ -1
      x2 x31 30
+     x2 c_g_1     1
      x2 c_u_x42_ -1
      x2 c_u_x43_ -1
      x2 c_u_x44_ -1
      x2 c_u_x45_ -1
      x2 c_u_x46_ -1
      x3 x31 30
+     x3 c_g_1     1
      x3 c_u_x47_ -1
      x3 c_u_x48_ -1
      x3 c_u_x49_ -1
      x3 c_u_x50_ -1
      x3 c_u_x51_ -1
      x4 x31 30
+     x4 c_g_1     1
      x4 c_u_x52_ -1
      x4 c_u_x53_ -1
      x4 c_u_x54_ -1
      x4 c_u_x55_ -1
      x4 c_u_x56_ -1
      x5 x31 30
+     x5 c_g_1     1
      x5 c_u_x57_ -1
      x5 c_u_x58_ -1
      x5 c_u_x59_ -1
@@ -151,6 +157,7 @@ RHS
      RHS c_e_x34_ 1
      RHS c_e_x35_ 1
      RHS c_e_x36_ 1
+     RHS c_g_1     1
      RHS c_u_x37_ 0
      RHS c_u_x38_ 0
      RHS c_u_x39_ 0

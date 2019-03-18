@@ -538,7 +538,11 @@ int getBasisHead(LPptr lp, intvec head, vector basicX) {
 
 int getBasisInvRow(LPptr lp, int i, vector phi) {
 	int status;
-
+//#ifdef DEBUG
+//    printf("current idx %d, address %p\n", i, phi+27);
+//    printf("number of row %d\n", CPXgetnumrows(env,lp));
+//    writeProblem(lp, "num_row_test.lp");
+//#endif
 	status = CPXbinvrow(env, lp, i, phi);
 	if ( status )
 		solverErrmsg(status);

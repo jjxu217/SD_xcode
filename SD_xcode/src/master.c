@@ -10,7 +10,6 @@
  */
 
 #include "twoSD.h"
-#define ALGO_CHECK 1
 
 extern configType config;
 // Jiajun TODO: add a new function as solve MIP master

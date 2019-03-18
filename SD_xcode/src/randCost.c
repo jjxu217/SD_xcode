@@ -15,7 +15,7 @@
 extern string outputDir;
 
 void calcBasis(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, oneBasis *B, int basisDim) {
-	vector	basicCost, costVector, tempPsiRow, basisVal;
+	vector	basicCost, costVector, tempPsiRow;
 	intvec 	basisHead, phiHead;
 	int		i, j;
 
@@ -26,7 +26,7 @@ void calcBasis(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, one
 
 	/* Compute the phi matrix associated with the current basis. We begin by first identifying the basis header. A negative
 	 * value in basis header indicates a slack row. */
-	getBasisHead(lp, basisHead+1, NULL);
+    getBasisHead(lp, basisHead+1, NULL);//Jiajun Question: why basisHead+1?
 
 	/* Compute the phi matrix header and extract the basis (of the dual) inverse matrix rows corresponding to the header. */
 	for ( i = 1; i <= num->rvdOmCnt; i++ ) {		/* Loop through all the columns with random cost coefficients to see if any of them are basic */
@@ -268,7 +268,7 @@ basisType *newBasisType(int numIter, int numCols, int numRows, int wordLength) {
 	if ( !(basis->obsFeasible = (BOOL **) arr_alloc(numIter, BOOL *)))
 		errMsg("allocation", "newBasisType", "basis->obsFeasible", 0);
 	basis->cnt = 0;
-	basis->basisDim = min(numRows, numCols);
+	basis->basisDim = numRows;
 	basis->cCodeLen = ceil((double) numBits*numCols/ (double) wordLength);
 	basis->rCodeLen = ceil((double) numBits*numRows/(double) wordLength);
 

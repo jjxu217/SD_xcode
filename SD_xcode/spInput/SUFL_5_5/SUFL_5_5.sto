@@ -26,7 +26,6 @@ BLOCKS DISCRETE REPLACE
     x7    x31    47
     x8    x31    8
     x9    x31    59
-    ONE_VAR_CONSTANT    x31    0
  BL BLOCK1 PERIOD2 0.25
     x10    x31    54
     x11    x31    39
@@ -53,7 +52,6 @@ BLOCKS DISCRETE REPLACE
     x7    x31    47
     x8    x31    8
     x9    x31    59
-    ONE_VAR_CONSTANT    x31    0
  BL BLOCK1 PERIOD2 0.25
     x10    x31    54
     x11    x31    38
@@ -80,7 +78,6 @@ BLOCKS DISCRETE REPLACE
     x7    x31    46
     x8    x31    8
     x9    x31    59
-    ONE_VAR_CONSTANT    x31    0
  BL BLOCK1 PERIOD2 0.25
     x10    x31    55
     x11    x31    37
@@ -107,5 +104,4 @@ BLOCKS DISCRETE REPLACE
     x7    x31    46
     x8    x31    8
     x9    x31    60
-    ONE_VAR_CONSTANT    x31    0
 ENDATA

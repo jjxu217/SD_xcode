@@ -37,7 +37,6 @@ ROWS
  L  c_u_x59_
  L  c_u_x60_
  L  c_u_x61_
- E  c_e_ONE_VAR_CONSTANT
 COLUMNS
      x1 x31 30
      x1 c_g_1     1
@@ -149,8 +148,6 @@ COLUMNS
      x9 x31 59
      x9 c_e_x35_ 1
      x9 c_u_x40_ 1
-     ONE_VAR_CONSTANT x31 0
-     ONE_VAR_CONSTANT c_e_ONE_VAR_CONSTANT 1
 RHS
      RHS c_e_x32_ 1
      RHS c_e_x33_ 1
@@ -183,7 +180,6 @@ RHS
      RHS c_u_x59_ 0
      RHS c_u_x60_ 0
      RHS c_u_x61_ 0
-     RHS c_e_ONE_VAR_CONSTANT 1
 BOUNDS
  BV BOUND x1
  BV BOUND x2

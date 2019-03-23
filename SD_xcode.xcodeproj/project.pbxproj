@@ -1226,6 +1226,7 @@
 					"STOCH_CHECK=1",
 					"BASIS_CHECK=1",
 					"ALGO_CHECK=1",
+					"DECOMPOSE_CHECK=1",
 				);
 				HEADER_SEARCH_PATHS = (
 					/Applications/CPLEX_Studio128/cplex/include,

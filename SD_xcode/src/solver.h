@@ -21,6 +21,7 @@
 #define		PARAM_SCAIND	CPXPARAM_Read_Scale
 #define		PARAM_LPMETHOD	CPXPARAM_LPMethod
 #define		PARAM_QPMETHOD	CPXPARAM_QPMethod
+#define     PARAM_MIPMETHOD CPXPARAM_MIP_Strategy_StartAlgorithm
 #define 	PARAM_PREIND	CPXPARAM_Preprocessing_Presolve
 
 #define		ALG_AUTOMATIC	CPX_ALG_AUTOMATIC
@@ -91,6 +92,7 @@ int setIntParam(int paramname, int paramvalue);
 void solverErrmsg(int status);
 int changeLPSolverType(int method);
 int changeQPSolverType(int method);
+int changeMILPSolverType(int method);
 
 int getProbName(LPptr lp, string probName, int len);
 int getObjSen(LPptr lp);

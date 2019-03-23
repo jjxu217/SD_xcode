@@ -203,7 +203,7 @@ int calcDelta(numType *num, coordType *coord, lambdaType *lambda, deltaType *del
 	bOmega.cnt = num->rvbOmCnt;	bOmega.col = coord->rvbOmRows;
 	COmega.cnt = num->rvCOmCnt; COmega.col = coord->rvCOmCols; COmega.row = coord->rvCOmRows;
 
-	if ( newOmegaFlag ) {
+        if ( newOmegaFlag ) {
 		/* Case I: New observation encountered. */
 		bOmega.val= omega->vals[elemIdx];
 		COmega.val = omega->vals[elemIdx] + num->rvbOmCnt;

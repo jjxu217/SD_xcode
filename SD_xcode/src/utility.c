@@ -237,8 +237,11 @@ vector MSparsexvAdd(sparseMatrix *M, vector v, vector ans){
 vector MSparsexvSub(sparseMatrix *M, vector v, vector ans){
 	int	cnt;
 
-	for (cnt = 1; cnt <= M->cnt; cnt++)
+    for (cnt = 1; cnt <= M->cnt; cnt++){
+        printf("%d-th RHS: %lf -= %lf * %lf", cnt, ans[M->row[cnt]], M->val[cnt], v[M->col[cnt]]);
 		ans[M->row[cnt]] -= M->val[cnt] * v[M->col[cnt]];
+        printf("After update: %lf \n", ans[M->row[cnt]]);
+    }
 
 	return ans;
 }//END MSparsexvSub()

@@ -21,8 +21,8 @@
 #define TRIVIAL 0
 #define NONTRIVIAL 1
 
-#undef ALGO_CHECK
-#undef BATCH_CHECK
+//#undef ALGO_CHECK
+//#undef BATCH_CHECK
 
 /* A data structure which holds on the configuration information about the algorithm. Most of these configuration parameters are read from a
 -configuration file. These elements, once set during initialization, are not modified during the course of the algorithm. */
@@ -172,6 +172,7 @@ void freeCellType(cellType *cell);
 
 /* master.c */
 int solveQPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb);
+int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb);
 int addCut2Master(oneProblem *master, oneCut *cut, vector vectX, int lenX);
 int constructQP(probType *prob, cellType *cell, vector incumbX, double quadScalar);
 int changeEtaCol(LPptr lp, int numRows, int numCols, int k, cutsType *cuts);

@@ -160,24 +160,34 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 		}
 
 		/******* 4. Solve subproblem with incumbent solution, and form an incumbent cut *******/
-		if (((cell->k - cell->iCutUpdt) % config.TAU == 0 ) ) {
-			if ( (cell->iCutIdx = formSDCut(prob, cell, cell->incumbX, omegaIdx, &newOmegaFlag, prob[0]->lb) ) < 0 ) {
-				errMsg("algorithm", "solveCell", "failed to create the incumbent cut", 0);
-				goto TERMINATE;
-			}
-			cell->iCutUpdt = cell->k;
-		}
+        if (config.MASTER_TYPE == PROB_QP){
+            if (((cell->k - cell->iCutUpdt) % config.TAU == 0 ) ) {
+                if ( (cell->iCutIdx = formSDCut(prob, cell, cell->incumbX, omegaIdx, &newOmegaFlag, prob[0]->lb) ) < 0 ) {
+                    errMsg("algorithm", "solveCell", "failed to create the incumbent cut", 0);
+                    goto TERMINATE;
+                }
+                cell->iCutUpdt = cell->k;
+            }
+        }
 
 		/******* 5. Check improvement in predicted values at candidate solution *******/
-		if ( !(cell->incumbChg) && cell->k > 1)
-			/* If the incumbent has not changed in the current iteration */
-			checkImprovement(prob[0], cell, candidCut);
+//        if ( !(cell->incumbChg) && cell->k > 1)
+//            /* If the incumbent has not changed in the current iteration */
+//            checkImprovement(prob[0], cell, candidCut);
 
 		/******* 6. Solve the master problem to obtain the new candidate solution */
-		if ( solveQPMaster(prob[0]->num, prob[0]->dBar, cell, prob[0]->lb) ) {
-			errMsg("algorithm", "solveCell", "failed to solve master problem", 0);
-			goto TERMINATE;
-		}
+		if (config.MASTER_TYPE == PROB_QP){
+            if ( solveQPMaster(prob[0]->num, prob[0]->dBar, cell, prob[0]->lb) ) {
+                errMsg("algorithm", "solveCell", "failed to solve master problem", 0);
+                goto TERMINATE;
+            }
+        }
+        else if (config.MASTER_TYPE == PROB_MILP){
+            if ( solveMILPMaster(prob[0]->num, prob[0]->dBar, cell, prob[0]->lb) ) {
+                errMsg("algorithm", "solveCell", "failed to solve master problem", 0);
+                goto TERMINATE;
+            }
+        }
 
 		cell->time.masterAccumTime += cell->time.masterIter; cell->time.subprobAccumTime += cell->time.subprobIter;
 		cell->time.argmaxAccumTime += cell->time.argmaxIter; cell->time.optTestAccumTime += cell->time.optTestIter;
@@ -206,16 +216,19 @@ void writeOptimizationSummary(FILE *soln, FILE *incumb, probType **prob, cellTyp
 
 	fprintf(soln, "Algorithm                              : Two-stage Stochastic Decomposition\n");
 	fprintf(soln, "Number of iterations                   : %d\n", cell->k);
-	fprintf(soln, "Lower bound estimate                   : %f\n", cell->incumbEst);
+	fprintf(soln, "Lower bound estimate                   : %f\n", cell->candidEst);
 	fprintf(soln, "Total time                             : %f\n", cell->time.repTime);
 	fprintf(soln, "Total time to solve master             : %f\n", cell->time.masterAccumTime);
 	fprintf(soln, "Total time to solve subproblems        : %f\n", cell->time.subprobAccumTime);
 	fprintf(soln, "Total time in argmax procedure         : %f\n", cell->time.argmaxAccumTime);
 	fprintf(soln, "Total time in verifying optimality     : %f\n", cell->time.optTestAccumTime);
 
-	if ( incumb != NULL ) {
-		printVector(cell->incumbX, prob[0]->num->cols, incumb);
-	}
+    // Change to candidate for a moment
+
+    if ( incumb != NULL ) {
+        printVector(cell->candidX, prob[0]->num->cols, incumb);
+    }
+    
 
 }//END WriteStat
 

@@ -235,6 +235,17 @@ int changeQPSolverType(int method) {
 	return 0;
 }//END changeQPSolverType()
 
+int changeMILPSolverType(int method) {
+    int status = 0;
+    
+    status = setIntParam(PARAM_MIPMETHOD, method);
+    if (status) {
+        solverErrmsg(status);
+        return 1;
+    }
+    return 0;
+}//END changeMIPSolverType()
+
 
 int setIntParam(int paramname, int paramvalue){
 
@@ -302,9 +313,9 @@ LPptr setupProblem(string name, int type, int numcols, int numrows, int objsense
 		mem_free(indices);
 	}
 
-#ifdef DEBUG
-    writeProblem(lp, "after_change_ctype.lp");
-#endif
+//#ifdef DEBUG
+//    writeProblem(lp, "after_change_ctype.lp");
+//#endif
 	return lp;
 }//END setupProblem()
 

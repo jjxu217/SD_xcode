@@ -21,6 +21,7 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
 	clock_t tic;
 
 	/* (a) compute and change the right-hand side using current observation and first-stage solution */
+    //printf("Number of CBar %d\n", prob->Cbar->cnt);
 	if ( computeRHS(subproblem->lp, prob->num, prob->coord, prob->bBar, prob->Cbar, Xvect, omega->vals[omegaIdx]) ) {
 		errMsg("algorithm", "solveSubprob", "failed to compute subproblem right-hand side", 0);
 		return 1;
@@ -104,19 +105,21 @@ int computeRHS(LPptr lp, numType *num, coordType *coord, sparseVector *bBar, spa
 	for ( cnt = 0; cnt < num->rows; cnt++ )
 		indices[cnt] = cnt;
 
-	bomega.cnt = num->rvbOmCnt;	bomega.col = coord->rvbOmRows; bomega.val = obs + coord->rvOffset[0];
-
-	Comega.cnt = num->rvCOmCnt; Comega.col = coord->rvCOmCols + num->rvbOmCnt;
-	Comega.row = coord->rvCOmRows + num->rvbOmCnt; Comega.val = obs + coord->rvOffset[1];
+//    bomega.cnt = num->rvbOmCnt;    bomega.col = coord->rvbOmRows; bomega.val = obs + coord->rvOffset[0];
+//
+//    Comega.cnt = num->rvCOmCnt; Comega.col = coord->rvCOmCols + num->rvbOmCnt;
+//    Comega.row = coord->rvCOmRows + num->rvbOmCnt; Comega.val = obs + coord->rvOffset[1];
 
 	/* Start with the values of b(omega) -- both fixed and varying */
 	rhs = expandVector(bBar->val, bBar->col, bBar->cnt, num->rows);
-	for (cnt = 1; cnt <= bomega.cnt; cnt++)
-		rhs[bomega.col[cnt]] += bomega.val[cnt];
+//    for (cnt = 1; cnt <= bomega.cnt; cnt++)
+//        rhs[bomega.col[cnt]] += bomega.val[cnt];
 
 	/* (cumulatively) subtract values of C(omega) x X -- both fixed and varying */
 	rhs = MSparsexvSub(Cbar, X, rhs);
-	rhs = MSparsexvSub(&Comega, X, rhs);
+	
+//    Jiajun: The following is no need, since there is Comega=0
+//    rhs = MSparsexvSub(&Comega, X, rhs);
 
 	/* change the right-hand side in the solver */
 	if ( changeRHS(lp, num->rows, indices, rhs + 1) ) {

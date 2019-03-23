@@ -1,0 +1,53 @@
+====================================================================================================================================
+Stage optimization problem for given input s_t = (x_t, omega_t) is in the following form : 
+
+				 h_t(s_t) = c_t*x_t + min d_t*u_t
+				                      s.t. D_t u_t = b_t - C_t x_t,
+
+with the following linear dynamics: x_{t+} = a_{t+} + A_{t+}x_t + B_{t+}u_t.
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+====================================================================================================================================
+-------------------------------------------------------- Problem Information -------------------------------------------------------
+====================================================================================================================================
+Problem                            : 4node
+Number of stages                   : 2
+------------------------------------------------------------------------------------------------------------------------------------
+Stage 0
+Number of decision variables (u_t) = 52		(Continuous = 52	Integer = 0	Binary = 0)
+Number of constraints              = 14
+Number of random variables (omega) = 0
+------------------------------------------------------------------------------------------------------------------------------------
+Stage 1
+Number of decision variables (u_t) = 186		(Continuous = 186	Integer = 0	Binary = 0)
+Number of constraints              = 74
+Number of random variables (omega) = 12		(a_t = 0; b_t = 12; c_t = 0; d_t = 0; A_t = 0; B_t = 0; C_t = 0; D_t = 0)
+====================================================================================================================================
+
+====================================================================================================================================
+Replication-1
+
+--------------------------------------- Problem Information ----------------------------------------
+
+Problem                                : TIME1
+First Stage Rows                       : 14
+First Stage Columns                    : 52
+
+------------------------------------------- Optimization -------------------------------------------
+
+Algorithm                              : Two-stage Stochastic Decomposition
+Number of iterations                   : 292
+Lower bound estimate                   : 447.016452
+Total time                             : 3.074674
+Total time to solve master             : 0.874330
+Total time to solve subproblems        : 0.099769
+Total time in argmax procedure         : 0.191070
+Total time in verifying optimality     : 0.000000
+
+-------------------------------------------- Evaluation --------------------------------------------
+
+Upper bound estimate                   : 446.715421
+Error in estimation                    : 0.001250
+Confidence interval at 95%             : [446.436154, 446.994689]
+Number of observations                 : 250

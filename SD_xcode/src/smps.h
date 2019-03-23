@@ -9,7 +9,7 @@
 #define SMPS_H_
 #include "utils.h"
 
-#undef INPUT_CHECK
+//#undef INPUT_CHECK
 
 typedef struct{
 	int		type;			/* type of problem: LP, QP, MIP or MIQP */

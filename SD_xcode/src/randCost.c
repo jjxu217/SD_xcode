@@ -268,7 +268,7 @@ basisType *newBasisType(int numIter, int numCols, int numRows, int wordLength) {
 	if ( !(basis->obsFeasible = (BOOL **) arr_alloc(numIter, BOOL *)))
 		errMsg("allocation", "newBasisType", "basis->obsFeasible", 0);
 	basis->cnt = 0;
-	basis->basisDim = min(numRows, numCols);
+	basis->basisDim = numRows;
 	basis->cCodeLen = ceil((double) numBits*numCols/ (double) wordLength);
 	basis->rCodeLen = ceil((double) numBits*numRows/(double) wordLength);
 

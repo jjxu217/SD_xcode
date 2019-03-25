@@ -245,8 +245,9 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 		prob[t]->sp->bdl[k] = orig->bdl[m];
 		prob[t]->sp->bdu[k] = orig->bdu[m];
 		if (orig->ctype[m] != 'C') {
-			errMsg("setup", "newProb", "integer variable in non-root stage",0);
-			return NULL;
+            orig->ctype[m] = 'C';//delete the error message, change the variable type to 'C'
+//            errMsg("setup", "newProb", "integer variable in non-root stage",0);
+//            return NULL;
 		}
 		else
 			prob[t]->sp->ctype[k] = orig->ctype[m];

@@ -51,6 +51,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7E84D1782245B6C700ABFE6D /* SUFL_5_5.tim */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_5_5.tim; sourceTree = "<group>"; };
+		7E84D1792245B6C700ABFE6D /* SUFL_5_5.sto */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_5_5.sto; sourceTree = "<group>"; };
+		7E84D17A2245B6C700ABFE6D /* SUFL_5_5.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_5_5.cor; sourceTree = "<group>"; };
 		7ECD26392238B2B900F11974 /* SD_xcode */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SD_xcode; sourceTree = BUILT_PRODUCTS_DIR; };
 		7ECD26452238B32B00F11974 /* pltexpA3_16.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pltexpA3_16.cor; sourceTree = "<group>"; };
 		7ECD26462238B32B00F11974 /* pltexpA3_16.tim */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pltexpA3_16.tim; sourceTree = "<group>"; };
@@ -105,9 +108,6 @@
 		7ECD26852238B32B00F11974 /* lgsc.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lgsc.cor; sourceTree = "<group>"; };
 		7ECD26872238B32B00F11974 /* lgsc.mod */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lgsc.mod; sourceTree = "<group>"; };
 		7ECD26882238B32B00F11974 /* lgsc.dat */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lgsc.dat; sourceTree = "<group>"; };
-		7ECD268A2238B32B00F11974 /* SUFL_5_5.tim */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_5_5.tim; sourceTree = "<group>"; };
-		7ECD268B2238B32B00F11974 /* SUFL_5_5.sto */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_5_5.sto; sourceTree = "<group>"; };
-		7ECD268C2238B32B00F11974 /* SUFL_5_5.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_5_5.cor; sourceTree = "<group>"; };
 		7ECD268E2238B32B00F11974 /* pltexpA2_16.tim */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pltexpA2_16.tim; sourceTree = "<group>"; };
 		7ECD268F2238B32B00F11974 /* pltexpA2_16.sto */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pltexpA2_16.sto; sourceTree = "<group>"; };
 		7ECD26902238B32B00F11974 /* pltexpA2_16.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pltexpA2_16.cor; sourceTree = "<group>"; };
@@ -293,6 +293,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7E84D1772245B6C700ABFE6D /* SUFL_5_5 */ = {
+			isa = PBXGroup;
+			children = (
+				7E84D1782245B6C700ABFE6D /* SUFL_5_5.tim */,
+				7E84D1792245B6C700ABFE6D /* SUFL_5_5.sto */,
+				7E84D17A2245B6C700ABFE6D /* SUFL_5_5.cor */,
+			);
+			path = SUFL_5_5;
+			sourceTree = "<group>";
+		};
 		7ECD26302238B2B900F11974 = {
 			isa = PBXGroup;
 			children = (
@@ -324,6 +334,7 @@
 		7ECD26432238B32B00F11974 /* spInput */ = {
 			isa = PBXGroup;
 			children = (
+				7E84D1772245B6C700ABFE6D /* SUFL_5_5 */,
 				7ECD26442238B32B00F11974 /* pltexpA3_16 */,
 				7ECD26482238B32B00F11974 /* cap41 */,
 				7ECD264C2238B32B00F11974 /* dim4 */,
@@ -339,7 +350,6 @@
 				7ECD26782238B32B00F11974 /* pltexpA5 */,
 				7ECD267D2238B32B00F11974 /* ssn_rc3 */,
 				7ECD26822238B32B00F11974 /* lgsc */,
-				7ECD26892238B32B00F11974 /* SUFL_5_5 */,
 				7ECD268D2238B32B00F11974 /* pltexpA2_16 */,
 				7ECD26912238B32B00F11974 /* pgp2 */,
 				7ECD26972238B32B00F11974 /* transship */,
@@ -546,16 +556,6 @@
 				7ECD26882238B32B00F11974 /* lgsc.dat */,
 			);
 			path = mplFiles;
-			sourceTree = "<group>";
-		};
-		7ECD26892238B32B00F11974 /* SUFL_5_5 */ = {
-			isa = PBXGroup;
-			children = (
-				7ECD268A2238B32B00F11974 /* SUFL_5_5.tim */,
-				7ECD268B2238B32B00F11974 /* SUFL_5_5.sto */,
-				7ECD268C2238B32B00F11974 /* SUFL_5_5.cor */,
-			);
-			path = SUFL_5_5;
 			sourceTree = "<group>";
 		};
 		7ECD268D2238B32B00F11974 /* pltexpA2_16 */ = {

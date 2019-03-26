@@ -1,11 +1,6 @@
 STOCH SUFL_5_5
 BLOCKS DISCRETE REPLACE
  BL BLOCK1 PERIOD2 0.25
-    x1    x31    30
-    x2    x31    30
-    x3    x31    30
-    x4    x31    30
-    x5    x31    30
     x10    x31    54
     x11    x31    39
     x12    x31    54
@@ -31,13 +26,7 @@ BLOCKS DISCRETE REPLACE
     x7    x31    47
     x8    x31    8
     x9    x31    59
-    ONE_VAR_CONSTANT    x31    0
  BL BLOCK1 PERIOD2 0.25
-    x1    x31    30
-    x2    x31    30
-    x3    x31    30
-    x4    x31    30
-    x5    x31    30
     x10    x31    54
     x11    x31    39
     x12    x31    54
@@ -63,13 +52,7 @@ BLOCKS DISCRETE REPLACE
     x7    x31    47
     x8    x31    8
     x9    x31    59
-    ONE_VAR_CONSTANT    x31    0
  BL BLOCK1 PERIOD2 0.25
-    x1    x31    30
-    x2    x31    30
-    x3    x31    30
-    x4    x31    30
-    x5    x31    30
     x10    x31    54
     x11    x31    38
     x12    x31    54
@@ -95,13 +78,7 @@ BLOCKS DISCRETE REPLACE
     x7    x31    46
     x8    x31    8
     x9    x31    59
-    ONE_VAR_CONSTANT    x31    0
  BL BLOCK1 PERIOD2 0.25
-    x1    x31    30
-    x2    x31    30
-    x3    x31    30
-    x4    x31    30
-    x5    x31    30
     x10    x31    55
     x11    x31    37
     x12    x31    53
@@ -127,5 +104,4 @@ BLOCKS DISCRETE REPLACE
     x7    x31    46
     x8    x31    8
     x9    x31    60
-    ONE_VAR_CONSTANT    x31    0
 ENDATA

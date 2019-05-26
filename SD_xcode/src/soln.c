@@ -25,13 +25,14 @@ int checkImprovement(probType *prob, cellType *cell, int candidCut) {
 	double  candidEst;
 
 	/* Calculate height at new candidate x with newest cut included */
-	candidEst = vXvSparse(cell->candidX, prob->dBar) + maxCutHeight(cell->cuts, cell->k, cell->candidX, prob->num->cols, cell->lb);;
+	candidEst = vXvSparse(cell->candidX, prob->dBar) + maxCutHeight(cell->cuts, cell->k, cell->candidX, prob->num->cols, cell->lb);
 	cell->incumbEst = vXvSparse(cell->incumbX, prob->dBar) + maxCutHeight(cell->cuts, cell->k, cell->incumbX, prob->num->cols, cell->lb);
 
 #ifdef ALGO_CHECK
 	printf("\nCandidate estimate = %lf, Incumbent estimate = %lf",candidEst, cell->incumbEst);
 #endif
 
+    //Jiajun check: should it be (candidEst - cell->incumbEst) > (config.R1 * cell->gamma), where cell->gamma = cell->candidEst - cell->incumbEst in last step?
 	/* If we see considerable improvement, then change the incumbent */
 	if ((candidEst - cell->incumbEst) < (config.R1 * cell->gamma)) {
 		/* when we find an improvement, then we need to replace the incumbent x with candidate x */
@@ -49,10 +50,18 @@ int checkImprovement(probType *prob, cellType *cell, int candidCut) {
 		cell->normDk_1 = cell->normDk;
 	}
 
-	if ( changeQPproximal(cell->master->lp, prob->num->cols, cell->quadScalar) ) {
-		errMsg("setup", "checkImprovement", "failed to add the proximal term to QP", 0);
-		return 1;
-	}
+    if (config.MASTER_TYPE == PROB_QP){
+        if ( changeQPproximal(cell->master->lp, prob->num->cols, cell->quadScalar) ) {
+            errMsg("setup", "checkImprovement", "failed to add the proximal term to QP", 0);
+            return 1;
+        }
+    }
+    else if(config.MASTER_TYPE == PROB_MILP){
+        if ( changeMILPproximal(cell->master->lp,prob->sp->objx, prob->num->cols, cell->quadScalar) ) {
+            errMsg("setup", "checkImprovement", "failed to add the proximal term to MILP", 0);
+            return 1;
+        }
+    }
 
 	return 0;
 }//END checkImprovement()
@@ -64,6 +73,8 @@ int replaceIncumbent(probType *prob, cellType *cell, double candidEst) {
 	cell->incumbEst = candidEst;
 
 	/* update the proximal parameter based on estimated improvement */
+    //Jiajun check normDk_1 (one norm for discrete, twonorm for continous),
+    //sigma change rule
 	if ( cell->normDk > config.TOLERANCE )
 		if ( cell->normDk >= config.R3 * cell->normDk_1 ) {
 			cell->quadScalar *= config.R2 * config.R3 * cell->normDk_1/ cell->normDk;
@@ -72,10 +83,18 @@ int replaceIncumbent(probType *prob, cellType *cell, double candidEst) {
 		}
 
 	/* update the right-hand side and the bounds with new incumbent solution */
-	if ( constructQP(prob, cell, cell->incumbX, cell->quadScalar) ) {
-		errMsg("algorithm", "replaceIncumbent", "failed to change the right-hand side after incumbent change", 0);
-		return 1;
-	}
+    if (config.MASTER_TYPE == PROB_QP){
+        if ( constructQP(prob, cell, cell->incumbX, cell->quadScalar) ) {
+            errMsg("algorithm", "replaceIncumbent", "failed to change the right-hand side after incumbent change", 0);
+            return 1;
+        }
+    }
+    else if(config.MASTER_TYPE == PROB_MILP){
+        if ( constructMILP(prob, cell, cell->incumbX, cell->quadScalar) ) {
+            errMsg("algorithm", "replaceIncumbent", "failed to change the right-hand side after incumbent change", 0);
+            return 1;
+        }
+    }
 
 	/* update the candidate cut as the new incumbent cut */
 	cell->iCutUpdt = cell->k;

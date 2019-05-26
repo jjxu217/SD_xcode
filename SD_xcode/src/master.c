@@ -94,6 +94,8 @@ int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb)
     double     d2 = 0.0; /* height at the candidate solution. */
     int     status, i;
     
+    //writeProblem(cell->master->lp, "Before_change_eta.lp");
+    
     if( changeEtaCol(cell->master->lp, num->rows, num->cols, cell->k, cell->cuts) ) {
         errMsg("algorithm", "solveMILPMaster", "failed to change the eta column coefficients", 0);
         return 1;
@@ -128,7 +130,7 @@ int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb)
     cell->time.masterIter = ((double) (clock() - tic))/CLOCKS_PER_SEC;
     
     /* Get the most recent optimal solution to master program */
-    if ( getPrimal(cell->master->lp, cell->candidX, num->cols) ) {
+    if ( getMIPPrimal(cell->master->lp, cell->candidX, num->cols) ) {
         errMsg("algorithm", "solveMILPMaster", "failed to obtain the primal solution for master", 0);
         return 1;
     }
@@ -136,13 +138,25 @@ int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb)
     /* add the incumbent back to change from \Delta X to X */
     for (i = 1; i <= num->cols; i++)
         d2 += cell->candidX[i] * cell->candidX[i];
-//    addVectors(cell->candidX, cell->incumbX, NULL, num->cols);
+    addVectors(cell->candidX, cell->incumbX, NULL, num->cols);
     
+    printf("candidX: \n");
+    for (i = 1; i <= num->cols; i++)
+        printf("%f ", cell->candidX[i]);
+    printf("\n");
+    
+    printf("incumbX: \n");
+    for (i = 1; i <= num->cols; i++)
+        printf("%f ", cell->incumbX[i]);
+    printf("\n");
+    //Jiajun check: what's the fuction of this
     /* update d_norm_k in soln_type. */
     if (cell->k == 1)
         cell->normDk_1 = d2;
     cell->normDk = d2;
     
+    
+    //Jiajun TODO: apply x to constraints
     /* Get the dual solution too */
 //    if ( getDual(cell->master->lp, cell->piM, cell->master->mar) ) {
 //        errMsg("solver", "solveMILPMaster", "failed to obtain dual solutions to master", 0);
@@ -173,30 +187,52 @@ int addCut2Master(oneProblem *master, oneCut *cut, vector vectX, int lenX) {
 	intvec 	indices;
 	int 	cnt;
 	static int cummCutNum = 0;
-
-	/* Set up indices */
-	if (!(indices = (intvec) arr_alloc(lenX + 1, int)))
-		errMsg("Allocation", "addcut2Master", "fail to allocate memory to coefficients of beta",0);
-	for (cnt = 1; cnt <= lenX; cnt++)
-		indices[cnt] = cnt - 1;
-	indices[0] = lenX;
+    double new_beta[2 * lenX + 1];
 
 	/* Cut right-hand side */
-	if ( config.MASTER_TYPE == PROB_QP )
+	if ( config.MASTER_TYPE == PROB_QP || config.MASTER_TYPE == PROB_MILP)
 		cut->alphaIncumb = cut->alpha - vXv(cut->beta, vectX, NULL, lenX);
 
 	/* Set up the cut name */
 	sprintf(cut->name, "cut_%04d", cummCutNum++);
 
-	/* add the cut to the cell cuts structure as well as on the solver */
-	if ( addRow(master->lp, lenX + 1, cut->alphaIncumb, GE, 0, indices, cut->beta, cut->name) ) {
-		errMsg("solver", "addcut2Master", "failed to add new row to problem in solver", 0);
-		return 1;
-	}
+    /* add the cut to the cell cuts structure as well as on the solver */
+    if (config.MASTER_TYPE == PROB_MILP){
+        /* Set up indices */
+        if (!(indices = (intvec) arr_alloc(2 * lenX + 1, int)))
+            errMsg("Allocation", "addcut2Master", "fail to allocate memory to coefficients of beta",0);
+        for (cnt = 1; cnt <= lenX; cnt++){
+            indices[cnt] = cnt - 1;
+            indices[lenX + cnt] = lenX + cnt;
+            new_beta[cnt] = cut->beta[cnt];
+            new_beta[lenX + cnt] = -cut->beta[cnt];
+        }
+        indices[0] = lenX;
+        new_beta[0] = cut->beta[0];
+        
+        if ( addRow(master->lp, 2 * lenX + 1, cut->alphaIncumb, GE, 0, indices, new_beta, cut->name) ) {
+            errMsg("solver", "addcut2Master", "failed to add new row to problem in solver", 0);
+            return 1;
+        }
+    }
+    else{
+        /* Set up indices */
+        if (!(indices = (intvec) arr_alloc(lenX + 1, int)))
+            errMsg("Allocation", "addcut2Master", "fail to allocate memory to coefficients of beta",0);
+        for (cnt = 1; cnt <= lenX; cnt++)
+            indices[cnt] = cnt - 1;
+        indices[0] = lenX;
+        
+        if ( addRow(master->lp, lenX + 1, cut->alphaIncumb, GE, 0, indices, cut->beta, cut->name) ) {
+            errMsg("solver", "addcut2Master", "failed to add new row to problem in solver", 0);
+            return 1;
+        }
+    }
+	
 	cut->rowNum = master->mar++;
 
 #ifdef CUT_CHECK
-	writeProblem(cell->master->lp,"master_wNewCut.lp");
+	writeProblem(master->lp,"master_wNewCut.lp");
 #endif
 
 	mem_free(indices);
@@ -222,6 +258,44 @@ int constructQP(probType *prob, cellType *cell, vector incumbX, double quadScala
 
 	return 0;
 }//END constructQP()
+
+//Jiajun function for construction MILP, MIP with L1 penalty in the master problem
+int constructMILP(probType *prob, cellType *cell, vector incumbX, double L1Scalar) {
+    
+//    if ( changeMILPwithL1(cell->master->lp, prob->sp, prob->num->cols) ) {
+//        errMsg("algorithm", "algoIntSD", "failed to change the proximal term", 0);
+//        return 1;
+//    }
+
+//#ifdef DEBUG
+//    writeProblem(cell->master->lp, "After_changeMILPwithL1.lp");
+//#endif
+    
+    if ( changeMILPproximal(cell->master->lp, prob->sp->objx, prob->num->cols, L1Scalar) ) {
+        errMsg("algorithm", "algoIntSD", "failed to change the proximal term", 0);
+        return 1;
+    }
+    
+//#ifdef DEBUG
+//    writeProblem(cell->master->lp, "After_changeMILPproximal.lp");
+//#endif
+    
+    if ( changeMILPrhs(prob, cell, incumbX) ) {
+        errMsg("algorithm", "algoIntSD", "failed to change the right-hand side to convert the problem into QP", 0);
+        return 1;
+    }
+    
+//    writeProblem(cell->master->lp, "After_constructMILP.lp");
+    
+    if ( changeMILPbds(cell->master->lp, prob->num->cols, prob->sp->bdl, prob->sp->bdu, incumbX, 0) ) {
+        errMsg("algorithm", "algoIntSD", "failed to change the bounds to convert the problem into MILP", 0);
+        return 1;
+    }
+    
+    writeProblem(cell->master->lp, "After_changeMILPbds.lp");
+    
+    return 0;
+}//END constructMILP()
 
 /* This function performs the updates on all the coefficients of eta in the master problem constraint matrix.  During every iteration,
  * each of the coefficients on eta are increased, so that the effect of the cut on the objective function is decreased. */
@@ -292,6 +366,89 @@ int changeQPproximal(LPptr lp, int numCols, double sigma) {
 	return 0;
 }//END constructQPproximal
 
+
+int changeMILPwithL1(LPptr lp, oneProblem *sp, int numCols){
+    int n, status;
+    vector lb, ub;
+    vector new_objx, new_matval;
+    int indices[numCols];
+    char ctype[numCols];
+    
+//    printf("Number of column in probType %d, number of column in lp %d ", numCols, );
+    
+    if (!(new_objx = arr_alloc(numCols+1, double)))
+        errMsg("Allocation", "changeMILPwithL1", "new_objx",0);
+    if (!(new_matval = arr_alloc(numCols+1, double)))
+        errMsg("Allocation", "changeMILPwithL1", "new_matval",0);
+    if (!(lb = arr_alloc(numCols+1, double)))
+        errMsg("Allocation", "changeMILPwithL1", "lb",0);
+    if (!(ub = arr_alloc(numCols+1, double)))
+        errMsg("Allocation", "changeMILPwithL1", "ub",0);
+    
+//    status = getObj(lp, objs, 0, numCols-1);
+//    if (status)    {
+//        errMsg("solver", "changeMILPwithL1", "failed to get the objective cost coeffs in the solver", 0);
+//        return 1;
+//    }
+    
+    for(n = 0; n < numCols; n++){
+        lb[n] = 0;
+        ub[n] = 1;
+        new_objx[n] = -sp->objx[n];
+        new_matval[n] = -sp->matval[n];
+        indices[n] = numCols + 1 + n;
+        ctype[n] = 'B';
+       // printf("n= %d, new_matbeg, sp->matind, new_matval=%d, %d, %f \n", n, new_matbeg[n], sp->matind[n], new_matval[n]);
+    }
+
+    
+    status = addcols(lp, numCols, sp->numnz, new_objx, sp->matbeg, sp->matind, new_matval, lb, ub, NULL);
+    
+    if (status)    {
+        errMsg("solver", "changeMILPwithL1", "failed to add d- columns in the solver", 0);
+        return 1;
+    }
+
+    
+    changeCtype(lp, numCols, indices, ctype);
+    
+    mem_free(new_objx);
+    mem_free(lb);
+    mem_free(ub);
+    mem_free(new_matval);
+    return 0;
+}
+
+//Jiajun todo: add L1 here, replace copyQPseparable()
+/* Jiajun: In this function, we consider the first stage only contains binary variables.
+ update the variables, and add L1 penalty. Replace the x = \hat x + d, where \hat x is the incubent solution, d is the change. The original objective function is c^T*x, and it changes to c^T*d + sigma*|d|  (we minus the constant term c^T * \hat x, and add the L1 penalty). Then we replace d = d_plus - d_minus, then the absolute value of d, |d| = d_plus + d_minus, where d_plus and d_minus are binary variables. To formulate this, we update the cost coeff of x (new cost coeff = old cost coeff + sigma), and use it to represent d_plus. We add new columns for d_minus, and use the cost coeff is -c, constraint coeff -a.  */
+int changeMILPproximal(LPptr lp, vector objx, int numCols, double sigma) {
+    int    n;
+    vector objx_with_L1;  //the array of d+ and d-;
+    intvec indices;
+    
+    if (!(objx_with_L1 = arr_alloc(2 * numCols, double)))
+        errMsg("Allocation", "changeMILPproximal", "objx_with_L1",0);
+    if (!(indices = arr_alloc(2 * numCols, int)))
+        errMsg("Allocation", "changeMILPproximal", "indices",0);
+    
+    /*0 ~ numCols - 1  is d+; numCols + 1 ~ 2 * numCols + 1 is d-*/
+    for(n = 0; n < numCols; n++){
+        objx_with_L1[n] = objx[n] + sigma;
+        indices[n] = n;
+    }
+    for(n = 0; n < numCols; n++){
+        objx_with_L1[numCols + n] = -objx[n] + sigma;
+        indices[numCols + n] = numCols + n + 1;
+    }
+    
+    changeObjx(lp, 2 * numCols, indices, objx_with_L1);
+    
+    mem_free(objx_with_L1);
+    mem_free(indices);
+    return 0;
+}//END constructMILPproximal
+
 /* In the regularized QP method, we need to change the rhs of x to d. The
  * 		 A * x 			= b
  * 		 eta + beta * x >= alpha
@@ -343,6 +500,46 @@ int changeQPrhs(probType *prob, cellType *cell, vector xk) {
 	mem_free(indices);
 	return 0;
 }//END changeQPrhs()
+
+/* The following function is the same with changeQPrhs() */
+int changeMILPrhs(probType *prob, cellType *cell, vector xk) {
+    int     status = 0, cnt;
+    vector     rhs;
+    intvec     indices;
+    
+    if (!(rhs =(vector) arr_alloc(prob->num->rows+cell->cuts->cnt+1, double)))
+        errMsg("Allocation", "changeRhs", "rhs",0);
+    if (!(indices =(intvec) arr_alloc(prob->num->rows+cell->cuts->cnt, int)))
+        errMsg("Allocation", "changeRhs", "indices",0);
+    /* Be careful with the one_norm!! In the CxX() routine, it assumes the 0th element is reserved for the 1_norm, in the returned vector, the T sparse
+     vector, and the x vector. */
+    for (cnt = 0; cnt < prob->num->rows; cnt++) {
+        rhs[cnt + 1] = prob->sp->rhsx[cnt];
+        indices[cnt] = cnt;
+    }
+    
+    /* b - A * xbar */
+    rhs = MSparsexvSub(prob->Dbar, xk, rhs);
+    
+    /*** new rhs = alpha - beta * xbar (benders cuts)***/
+    for (cnt = 0; cnt < cell->cuts->cnt; cnt++) {
+        rhs[prob->num->rows+cnt+1] = cell->cuts->vals[cnt]->alpha - vXv(cell->cuts->vals[cnt]->beta, xk, NULL, prob->sp->mac);
+        indices[prob->num->rows+cnt] = cell->cuts->vals[cnt]->rowNum;
+        
+        cell->cuts->vals[cnt]->alphaIncumb = rhs[prob->num->rows+cnt+1];
+    }
+    
+    /* Now we change the right-hand of the master problem. */
+    status = changeRHS(cell->master->lp, prob->num->rows + cell->cuts->cnt, indices, rhs+1);
+    if (status)    {
+        errMsg("solver", "changeQPrhs", "failed to change the right-hand side in the solver", 0);
+        return 1;
+    }
+    
+    mem_free(rhs);
+    mem_free(indices);
+    return 0;
+}//END changeMILPrhs()
 
 /* This function changes the (lower) bounds of the variables, while changing from x to d. The lower bounds of d varibles are -xbar
  * (incumbent solution). */
@@ -397,6 +594,43 @@ int changeQPbds(LPptr lp, int numCols, vector bdl, vector bdu, vector xk, int of
 
 	return 0;
 }//END changeQPbds()
+
+
+/* Jiajun: this function only consider binary variables: -\hat x <= d <= 1- \hat x*/
+int changeMILPbds(LPptr lp, int numCols, vector bdl, vector bdu, vector xk, int offset) {
+    int     status = 0, cnt;
+    vector    bounds;
+    intvec    indices;
+    char     *lu;
+    
+    if (!(bounds = arr_alloc(2 * numCols, double)))
+        errMsg("Allocation", "changeBounds", "bounds",0);
+    if (!(indices = arr_alloc(2 * numCols, int)))
+        errMsg("Allocation", "change_bounds", "indices",0);
+    if (!(lu = arr_alloc(2 * numCols, char)))
+        errMsg("Allocation", "changeBounds", "lu",0);
+    
+    //printf("xk: ");
+    /* Change the Bound, now we have 2 * numCols of variables(numCols of d+/-). If \hat x[i] = 0: d-[i]=0; \hat x[i] = 1: d+[i]=0  */
+    for (cnt = 0; cnt < numCols; cnt++) {
+        lu[cnt] = 'B';
+        bounds[cnt] = 0;
+        if(DBL_ABS(xk[cnt+1] - 0) < 0.0001)
+            indices[cnt] = numCols + 1 + cnt;
+        else
+            indices[cnt] = cnt;
+        //printf("%f ", xk[cnt]);
+    }
+    
+    status = changeBDS(lp, numCols, indices, lu, bounds);
+    if (status) {
+        errMsg("algorithm", "changeMILP", "failed to change the bound in the solver", 0);
+        return 1;
+    }
+    
+    mem_free(bounds); mem_free(indices); mem_free(lu);
+    return 0;
+}//END changeMILPbds()
 
 /* This subroutine initializes the master problem by copying information from the decomposed prob[0](type: oneProblem) and adding a column for
  * theta for modified benders decomposition. */

@@ -256,7 +256,13 @@ int solveCompromise(probType *prob, batchSummary *batch) {
 	}
 
 	/* solve the compromise problem */
-	changeQPSolverType(ALG_CONCURRENT);
+    if(config.MASTER_TYPE == PROB_QP){
+        changeQPSolverType(ALG_CONCURRENT);
+    }
+    else if(config.MASTER_TYPE == PROB_MILP){
+        changeMILPSolverType(ALG_CONCURRENT);
+    }
+	
 	if ( solveProblem(batch->sp->lp, batch->sp->name, config.MASTER_TYPE, &status) ) {
 		writeProblem(batch->sp->lp, "error.lp");
 		errMsg("algorithm", "solveCompromise", "failed to solve the compromise problem", 0);
@@ -265,7 +271,11 @@ int solveCompromise(probType *prob, batchSummary *batch) {
 
 	/* Get the primal solution to the compromise problem */
 	batch->compromiseX = (vector) arr_alloc(prob->num->cols+1, double);
-	getPrimal(batch->sp->lp, batch->compromiseX, prob->num->cols);
+    if(config.MASTER_TYPE == PROB_MILP)
+        getMIPPrimal(batch->sp->lp, batch->compromiseX, prob->num->cols);
+    else
+        getPrimal(batch->sp->lp, batch->compromiseX, prob->num->cols);
+    
 	for ( j = 1; j <= prob->num->cols; j++ )
 		batch->compromiseX[j] += batch->incumbX[0][j];
 

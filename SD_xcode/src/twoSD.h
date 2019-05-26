@@ -162,6 +162,7 @@ int readConfig();
 int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, string probName);
 int solveCell(stocType *stoc, probType **prob, cellType *cell);
 void writeOptimizationSummary(FILE *soln, FILE *incumb, probType **prob, cellType *cell, BOOL header);
+void writeSolSummary(FILE *sol, cellType *cell, int cols);
 void cleanupAlgo(probType **prob, cellType *cell, int T);
 
 /* setup.c */
@@ -175,11 +176,17 @@ int solveQPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb);
 int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb);
 int addCut2Master(oneProblem *master, oneCut *cut, vector vectX, int lenX);
 int constructQP(probType *prob, cellType *cell, vector incumbX, double quadScalar);
+int constructMILP(probType *prob, cellType *cell, vector incumbX, double quadScalar);
+int constructMIQP(probType *prob, cellType *cell, vector incumbX, double quadScalar);
 int changeEtaCol(LPptr lp, int numRows, int numCols, int k, cutsType *cuts);
 int updateRHS(LPptr lp, cutsType *cuts, int numIter, double lb);
 int changeQPproximal(LPptr lp, int numCols, double sigma);
 int changeQPrhs(probType *prob, cellType *cell, vector xk);
 int changeQPbds(LPptr lp, int numCols, vector bdl, vector bdu, vector xk, int offset);
+int changeMILPwithL1(LPptr lp, oneProblem *sp, int numCols);
+int changeMILPproximal(LPptr lp, vector objx, int numCols, double sigma);
+int changeMILPrhs(probType *prob, cellType *cell, vector xk);
+int changeMILPbds(LPptr lp, int numCols, vector bdl, vector bdu, vector xk, int offset);
 oneProblem *newMaster(oneProblem *orig, double lb);
 
 /* cuts.c */

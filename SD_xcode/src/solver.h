@@ -58,6 +58,7 @@ int solveProblem(LPptr lp, string pname, int type, int *status);
 int getProbType(LPptr lp);
 double getObjective(LPptr lp, int type);
 int getPrimal(LPptr lp, vector X, int length);
+int getMIPPrimal(LPptr lp, vector X, int length);
 double getPrimalPoint(LPptr lp, int idx);
 int getDual(LPptr lp, vector Pi, int length);
 int getDualSlacks(LPptr lp, vector Dj, int length);
@@ -83,6 +84,8 @@ int loadProblem(CPXLPptr lp, int numcols, int numrows, int objsense, vector objx
 int loadProbwNames(LPptr lp, int numcols, int numrows, int objsense, vector objx, vector rhsx, string sense, intvec matbeg, intvec matcnt,
 		intvec matind, vector matval, vector lb, vector ub, vector rngval, string *colname, string *rowname);
 int copyQPseparable(LPptr lp, double *qsepvec);
+int addcols(LPptr lp, int ccnt, int nzcnt, vector obj, intvec matbeg, intvec cmatind, vector cmatval, vector lb,
+            vector ub, string* colname);
 LPptr cloneProblem(LPptr origLp);
 int writeProblem(LPptr lp, char *filename);
 

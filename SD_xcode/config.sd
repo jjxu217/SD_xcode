@@ -5,7 +5,7 @@ TOLERANCE    0.001
 MIN_ITER 1
 
 // Maximum number of iterations
-MAX_ITER   5000
+MAX_ITER   100
 
 // Master type: 0 for LP, 1 for MILP, 5 for QP and 7 for MIQP
 MASTER_TYPE 1
@@ -17,7 +17,7 @@ CUT_MULT  1
 TAU 2
 
 // The Minimum value of the cell->quad_scalar.
-MIN_QUAD_SCALAR 0.001
+MIN_QUAD_SCALAR 10
 
 // Run seeds
 RUN_SEED    4650175399072632

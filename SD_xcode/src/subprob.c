@@ -42,7 +42,7 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
 	/* (c) Solve the subproblem to obtain the optimal dual solution. */
 	tic = clock();
 	setIntParam(PARAM_PREIND, OFF);
-	changeLPSolverType(ALG_PRIMAL);
+    changeLPSolverType(ALG_NET);  //Jiajun: sub-problem type
 	if ( solveProblem(subproblem->lp, subproblem->name, subproblem->type, &status) ) {
 		if ( status == STAT_INFEASIBLE ) {
 			/* Set the subproblem feasibility flag to false and proceed to complete stochastic updates. These updates are
@@ -63,6 +63,16 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
 	double obj;
 	obj = getObjective(subproblem->lp, PROB_LP);
 	printf("Objective value of Subproblem  = %lf\n", obj);
+    
+    double y[subproblem->mac + 1];
+    int i;
+    status = getPrimal(subproblem->lp, y, subproblem->mac);
+    printf("Solution of the Subproblem: (");
+    for(i = 0; i <= subproblem->mac; i++){
+        if(DBL_ABS(y[i] - 0) > 0.0001)
+            printf("%d: %f; ", i, y[i]);
+    }
+    printf(")\n");
 #endif
 
 	if ( newBasisFlag!= NULL ) {
@@ -105,6 +115,7 @@ int computeRHS(LPptr lp, numType *num, coordType *coord, sparseVector *bBar, spa
 	for ( cnt = 0; cnt < num->rows; cnt++ )
 		indices[cnt] = cnt;
 
+    //Jiajun update: no need if there is no randomness in the RHS
 //    bomega.cnt = num->rvbOmCnt;    bomega.col = coord->rvbOmRows; bomega.val = obs + coord->rvOffset[0];
 //
 //    Comega.cnt = num->rvCOmCnt; Comega.col = coord->rvCOmCols + num->rvbOmCnt;

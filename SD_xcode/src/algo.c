@@ -115,23 +115,25 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 	return 1;
 }//END algo()
 
-//Jiajun TODO: Solve 1st stage as MIP
+//Jiajun: Solve 1st stage as MIP
 int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 	vector 	observ;
 	int		m, omegaIdx, candidCut;
 	BOOL 	newOmegaFlag;
 	clock_t	tic;
+    FILE     *solFile = NULL;
 
+    solFile = openFile(outputDir, "solutions.dat", "a");    
 	/* -+-+-+-+-+-+-+-+-+-+-+-+-+-+- Main Algorithm -+-+-+-+-+-+-+-+-+-+-+-+-+-+- */
 	if ( !(observ = (vector) arr_alloc(stoc->numOmega + 1, double)) )
 		errMsg("allocation", "solveCell", "observ", 0);
 
-	/******* 0. Initialization: The algorithm begins by solving the master problem as a QP *******/
+	/******* 0. Initialization: The algorithm begins by solving the master problem as a LP/QP/MILP *******/
 	while (cell->optFlag == FALSE && cell->k < config.MAX_ITER) {
 		cell->k++;
 		tic = clock();
 #if defined(STOCH_CHECK) || defined(ALGO_CHECK)
-		printf("\nIteration-%d :: \n", cell->k);
+		printf("\nIteration-%d :: \n" , cell->k);
 #else
 		if ( (cell->k -1) % 100 == 0) {
 			printf("\nIteration-%4d: ", cell->k);
@@ -160,7 +162,7 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 		}
 
 		/******* 4. Solve subproblem with incumbent solution, and form an incumbent cut *******/
-        if (config.MASTER_TYPE == PROB_QP){
+        if (config.MASTER_TYPE == PROB_QP || config.MASTER_TYPE == PROB_MILP){
             if (((cell->k - cell->iCutUpdt) % config.TAU == 0 ) ) {
                 if ( (cell->iCutIdx = formSDCut(prob, cell, cell->incumbX, omegaIdx, &newOmegaFlag, prob[0]->lb) ) < 0 ) {
                     errMsg("algorithm", "solveCell", "failed to create the incumbent cut", 0);
@@ -171,9 +173,9 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
         }
 
 		/******* 5. Check improvement in predicted values at candidate solution *******/
-//        if ( !(cell->incumbChg) && cell->k > 1)
-//            /* If the incumbent has not changed in the current iteration */
-//            checkImprovement(prob[0], cell, candidCut);
+        if ( !(cell->incumbChg) && cell->k > 1)
+            /* If the incumbent has not changed in the current iteration */
+            checkImprovement(prob[0], cell, candidCut);
 
 		/******* 6. Solve the master problem to obtain the new candidate solution */
 		if (config.MASTER_TYPE == PROB_QP){
@@ -193,8 +195,11 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 		cell->time.argmaxAccumTime += cell->time.argmaxIter; cell->time.optTestAccumTime += cell->time.optTestIter;
 		cell->time.masterIter = cell->time.subprobIter = cell->time.optTestIter = cell->time.argmaxIter = 0.0;
 		cell->time.iterTime = ((double) clock() - tic)/CLOCKS_PER_SEC; cell->time.iterAccumTime += cell->time.iterTime;
+        
+        writeSolSummary(solFile, cell, prob[0]->num->cols);
 	}//END while loop
 
+    fclose(solFile);
 	mem_free(observ);
 	return 0;
 
@@ -216,21 +221,27 @@ void writeOptimizationSummary(FILE *soln, FILE *incumb, probType **prob, cellTyp
 
 	fprintf(soln, "Algorithm                              : Two-stage Stochastic Decomposition\n");
 	fprintf(soln, "Number of iterations                   : %d\n", cell->k);
-	fprintf(soln, "Lower bound estimate                   : %f\n", cell->candidEst);
+	fprintf(soln, "Lower bound estimate                   : %f\n", cell->incumbEst);
 	fprintf(soln, "Total time                             : %f\n", cell->time.repTime);
 	fprintf(soln, "Total time to solve master             : %f\n", cell->time.masterAccumTime);
 	fprintf(soln, "Total time to solve subproblems        : %f\n", cell->time.subprobAccumTime);
 	fprintf(soln, "Total time in argmax procedure         : %f\n", cell->time.argmaxAccumTime);
 	fprintf(soln, "Total time in verifying optimality     : %f\n", cell->time.optTestAccumTime);
 
-    // Change to candidate for a moment
-
-    if ( incumb != NULL ) {
-        printVector(cell->candidX, prob[0]->num->cols, incumb);
-    }
-    
+	if ( incumb != NULL ) {
+		printVector(cell->incumbX, prob[0]->num->cols, incumb);
+	}
 
 }//END WriteStat
 
 
+void writeSolSummary(FILE *sol, cellType *cell, int cols){
+    fprintf(sol, "\n--------------iteration %d--------------------\n", cell->k);
+    
+    fprintf(sol, "incumbX: \n");
+    printVector(cell->incumbX, cols, sol);
+    
+    fprintf(sol, "candidX: \n");
+    printVector(cell->candidX, cols, sol);
+}
 

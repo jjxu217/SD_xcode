@@ -27,12 +27,11 @@ int setupAlgo(oneProblem *orig, stocType *stoc, timeType *tim, probType ***prob,
 	}
 
 	/* calculate lower bounds for each stage */
-	lb = calcLowerBound(orig, tim, stoc);
+	lb = calcLowerBound(orig, tim, stoc);  //Jiajun Check, new LB in IP?
 	if ( lb == NULL )  {
 		errMsg("setup", "setupAlgo", "failed to compute lower bounds on stage problem", 0);
 		mem_free(lb); return 1;
 	}
-    //Jiajun Check: check the decoposition result
 	/* decompose the problem into master and subproblem */
 	(*prob) = newProb(orig, stoc, tim, lb, config.TOLERANCE);
 	if ( (*prob) == NULL ) {
@@ -104,7 +103,8 @@ cellType *newCell(stocType *stoc, probType **prob, vector xk) {
 	cell->candidEst 		= prob[0]->lb + vXvSparse(cell->candidX, prob[0]->dBar);
 
 	/* incumbent solution and estimates */
-	if (config.MASTER_TYPE == PROB_QP) {
+    //Jiajun: add master type MIP
+	if (config.MASTER_TYPE == PROB_QP || config.MASTER_TYPE == PROB_MIQP || config.MASTER_TYPE == PROB_MILP) {
 		cell->incumbX   = duplicVector(xk, prob[0]->num->cols);
 		cell->incumbEst = cell->candidEst;
 		cell->quadScalar= config.MIN_QUAD_SCALAR;     						/* The quadratic scalar, 'sigma'*/
@@ -168,22 +168,39 @@ cellType *newCell(stocType *stoc, probType **prob, vector xk) {
 	cell->time.repTime = cell->time.iterTime = cell->time.masterIter = cell->time.subprobIter = cell->time.optTestIter = cell->time.argmaxIter = 0.0;
 	cell->time.iterAccumTime = cell->time.masterAccumTime = cell->time.subprobAccumTime = cell->time.optTestAccumTime = cell->time.argmaxAccumTime = 0.0;
 
-    //Jiajun TODO:construct the MIQP instead?
+    
 	/* construct the QP using the current incumbent */
 	if ( config.MASTER_TYPE == PROB_QP ) {
 		if ( constructQP(prob[0], cell, cell->incumbX, cell->quadScalar) ) {
 			errMsg("setup", "newCell", "failed to change the right-hand side after incumbent change", 0);
 			return NULL;
 		}
-
 		cell->incumbChg = FALSE;
 #if defined(SETUP_CHECK)
-		if ( writeProblem(cell->aster->lp, "newQPMaster.lp") ) {
+		if ( writeProblem(cell->master->lp, "newQPMaster.lp") ) {
 			errMsg("write problem", "new_master", "failed to write master problem to file",0);
 			return NULL;
 		}
 #endif
 	}
+    else if ( config.MASTER_TYPE == PROB_MILP ) {
+        if ( changeMILPwithL1(cell->master->lp, prob[0]->sp, prob[0]->num->cols) ) {
+            errMsg("algorithm", "algoIntSD", "failed to change the proximal term", 0);
+            return NULL;
+        }
+        
+        if ( constructMILP(prob[0], cell, cell->incumbX, cell->quadScalar) ) {
+            errMsg("setup", "newCell", "failed to change the right-hand side after incumbent change", 0);
+            return NULL;
+        }
+        cell->incumbChg = FALSE;
+#if defined(SETUP_CHECK)
+        if ( writeProblem(cell->master->lp, "newMILPMaster.lp") ) {
+            errMsg("write problem", "new_master", "failed to write master problem to file",0);
+            return NULL;
+        }
+#endif
+    }
 
 	return cell;
 }//END newCell()
@@ -228,10 +245,19 @@ int cleanCellType(cellType *cell, probType *prob, vector xk) {
 			return 1;
 		}
 	cell->master->mar = prob->num->rows;
-	if( changeQPproximal(cell->master->lp, prob->num->cols, cell->quadScalar)) {
-		errMsg("algorithm", "cleanCellType", "failed to change the proximal term", 0);
-		return 1;
-	}
+	
+    if ( config.MASTER_TYPE == PROB_QP ) {
+        if( changeQPproximal(cell->master->lp, prob->num->cols, cell->quadScalar)) {
+            errMsg("algorithm", "cleanCellType", "failed to change the proximal term", 0);
+            return 1;
+        }
+    }
+    else if (config.MASTER_TYPE == PROB_MILP){
+        if( changeMILPproximal(cell->master->lp, prob->sp->objx, prob->num->cols, cell->quadScalar)) {
+            errMsg("algorithm", "cleanCellType", "failed to change the proximal term", 0);
+            return 1;
+        }
+    }
 
 	/* cuts */
 	if (cell->cuts) freeCutsType(cell->cuts, TRUE);
@@ -260,12 +286,26 @@ int cleanCellType(cellType *cell, probType *prob, vector xk) {
 
 		cell->incumbChg = FALSE;
 #if defined(SETUP_CHECK)
-		if ( writeProblem(cell->aster->lp, "cleanedQPMaster.lp") ) {
+		if ( writeProblem(cell->master->lp, "cleanedQPMaster.lp") ) {
 			errMsg("write problem", "new_master", "failed to write master problem to file",0);
 			return 1;
 		}
 #endif
 	}
+    else if ( config.MASTER_TYPE == PROB_MILP ) {
+        if ( constructMILP(prob, cell, cell->incumbX, cell->quadScalar) ) {
+            errMsg("setup", "newCell", "failed to change the right-hand side after incumbent change", 0);
+            return 1;
+        }
+        
+        cell->incumbChg = FALSE;
+#if defined(SETUP_CHECK)
+        if ( writeProblem(cell->master->lp, "cleanedMILPMaster.lp") ) {
+            errMsg("write problem", "new_master", "failed to write master problem to file",0);
+            return 1;
+        }
+#endif
+    }
 
 	return 0;
 }//END cleanCellType()

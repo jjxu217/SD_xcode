@@ -57,7 +57,7 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 			prob[t]->sp->cstorsz = orig->cname[tim->col[t+1]] - orig->cname[tim->col[t]];
 			rOffset += prob[t]->sp->rstorsz;
 			cOffset += prob[t]->sp->cstorsz;
-            prob[t]->sp->type = PROB_MILP; //first stage MIP
+            prob[t]->sp->type = PROB_MILP; //Jiajun check, first stage MIP
 		}
 		else {
 			prob[t]->sp->mar = prob[t]->sp->marsz = orig->mar - tim->row[t];
@@ -516,10 +516,16 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
 		return NULL;
 	}
 
-    //Jiajun UPDATE: solve it as the original type
+    //Jiajun UPDATE: if master if LP/QP, solve the mean as LP;
+    //if master is MILP/MIQP, solve the mean as MILP
 	/* solve the mean value problem */
 	changeLPSolverType(ALG_AUTOMATIC);
-    status = solveProblem(orig->lp, orig->name, orig->type, &status);
+    if (orig->type == PROB_LP || orig->type == PROB_QP){
+        status = solveProblem(orig->lp, orig->name, PROB_LP, &status);
+    }
+    else if(orig->type == PROB_MILP || orig->type == PROB_MIQP){
+        status = solveProblem(orig->lp, orig->name, PROB_MILP, &status);
+    }
 	if ( status ) {
 		errMsg("setup", "meanProblem", "failed to solve mean value problem", 0);
 		return NULL;
@@ -529,13 +535,26 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
 	if ( !(xk = (vector) arr_alloc(orig->mac+1, double)) )
 		errMsg("allocation", "meanProblem", "sol", 0);
 
-    //Jiaju TODO: change the type
+    //Jiaju: get the objective function based on the mster type
 	/* print results */
-	obj = getObjective(orig->lp, orig->type);
+    if (orig->type == PROB_LP || orig->type == PROB_QP){
+        obj = getObjective(orig->lp, PROB_LP);
+    }
+    else if(orig->type == PROB_MILP || orig->type == PROB_MIQP){
+        obj = getObjective(orig->lp, PROB_MILP);
+    }
+    
 	printf("Optimal objective function value for mean value problem(Problem Type %d) = %lf\n", orig->type, obj);
 
 	/* obtain the primal solution */
-	getPrimal(orig->lp,	xk, orig->mac);
+    getPrimal(orig->lp, xk, orig->mac);
+    
+#ifdef DEBUG
+    printf("optimal solutions for the mean problem: ");
+    for(n = 0;n < orig->mac; n++){
+        printf("%f ", xk[n]);
+    }
+#endif
 
 	return xk;
 }//END meanProblem()
@@ -575,11 +594,14 @@ vector calcLowerBound(oneProblem *orig, timeType *tim, stocType *stoc) {
 	if ( !(beta = (vector) arr_alloc(orig->mac+3, double)) )
 		errMsg("allocation", "getLowerBound", "beta", 0);
 
-	/* obtain dual solutions from the mean value solve */
-//    if ( getDual(orig->lp, duals, orig->mar) ) {
-//        errMsg("setup", "getLowerBound", "failed to obtain dual for the mean value problem", 0);
-//        return NULL;
-//    }
+	/* obtain dual solutions from the mean value solve, if the master if not integer */
+    //Jiajun Check: if the master is IP, then there is no dual, the following code need to be changed
+    if (orig->type == PROB_LP || orig->type == PROB_QP){
+        if ( getDual(orig->lp, duals, orig->mar) ) {
+            errMsg("setup", "getLowerBound", "failed to obtain dual for the mean value problem", 0);
+            return NULL;
+        }
+    }
 
 	printf("Lower bounds computed = ");
 

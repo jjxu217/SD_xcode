@@ -149,12 +149,12 @@ COLUMNS
      x9 c_e_x35_ 1
      x9 c_u_x40_ 1
 RHS
+     RHS c_g_1    2
      RHS c_e_x32_ 1
      RHS c_e_x33_ 1
      RHS c_e_x34_ 1
      RHS c_e_x35_ 1
      RHS c_e_x36_ 1
-     RHS c_g_1     1
      RHS c_u_x37_ 0
      RHS c_u_x38_ 0
      RHS c_u_x39_ 0

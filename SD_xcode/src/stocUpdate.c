@@ -113,7 +113,7 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 		}
 	}
 
-	/* Add the basis to the structure */
+    /* Add the basis to the structure */ 
 	basis->vals[basis->cnt] = B;
 
 	if ( B->feasFlag ) {

@@ -22,7 +22,7 @@ int addCut2Pool(cellType *cell, oneCut *cut, int lenX, double lb, BOOL feasCut);
 int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb) {
 	oneCut 	*cut;
 	int    	cutIdx;
-	BOOL	newBasisFlag;
+	BOOL	newBasisFlag=TRUE;
 
 	/* (a) Construct the subproblem with input observation and master solution, solve the subproblem, and complete stochastic updates */
 	if ( solveSubprob(prob[1], cell->subprob, Xvect, cell->basis, cell->lambda, cell->sigma, cell->delta, config.MAX_ITER,
@@ -410,16 +410,28 @@ int resolveInfeasibility(probType **prob, cellType *cell, BOOL *newOmegaFlag, in
 
 		/* relax the proximal term and change it in the solver */
 		cell->quadScalar = config.MIN_QUAD_SCALAR;
-		if ( changeQPproximal(cell->master->lp, prob[0]->num->cols, cell->quadScalar) ) {
-			errMsg("algorithm", "resolveInfeasibility", "failed to change the proximal parameter", 0);
-			return 1;
-		}
-
-		/* Solver the master problem with the added feasibility cut */
-		if ( solveQPMaster(prob[0]->num, prob[0]->dBar, cell, prob[0]->lb) ) {
-			errMsg("algorithm", "resolveInfeasibility", "failed to solve the master problem", 0);
-			return 1;
-		}
+        if(config.MASTER_TYPE == PROB_QP){
+            if ( changeQPproximal(cell->master->lp, prob[0]->num->cols, cell->quadScalar) ) {
+                errMsg("algorithm", "resolveInfeasibility", "failed to change the proximal parameter", 0);
+                return 1;
+            }
+            /* Solver the master problem with the added feasibility cut */
+            if ( solveQPMaster(prob[0]->num, prob[0]->dBar, cell, prob[0]->lb) ) {
+                errMsg("algorithm", "resolveInfeasibility", "failed to solve the master problem", 0);
+                return 1;
+            }
+        }
+        else if(config.MASTER_TYPE == PROB_MILP){
+            if ( changeMILPproximal(cell->master->lp, prob[0]->sp->objx, prob[0]->num->cols, cell->quadScalar) ) {
+                errMsg("algorithm", "resolveInfeasibility", "failed to change the proximal parameter", 0);
+                return 1;
+            }
+            /* Solver the master problem with the added feasibility cut */
+            if ( solveMILPMaster(prob[0]->num, prob[0]->dBar, cell, prob[0]->lb) ) {
+                errMsg("algorithm", "resolveInfeasibility", "failed to solve the master problem", 0);
+                return 1;
+            }
+        }
 
 		/* increment the count for number of infeasible master solutions encountered */
 		cell->feasCnt++;

@@ -4,7 +4,7 @@ BLOCKS DISCRETE REPLACE
     x10    x31    54
     x11    x31    39
     x12    x31    54
-    x13    x31    8
+    x13    x31    38
     x14    x31    64
     x15    x31    25
     x16    x31    48
@@ -30,7 +30,7 @@ BLOCKS DISCRETE REPLACE
     x10    x31    54
     x11    x31    39
     x12    x31    54
-    x13    x31    8
+    x13    x31    37
     x14    x31    64
     x15    x31    25
     x16    x31    48

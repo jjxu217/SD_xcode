@@ -51,6 +51,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7EAA50F022973CA200AF4875 /* SUFL_20_30_30.tim */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_20_30_30.tim; sourceTree = "<group>"; };
+		7EAA50F122973CA200AF4875 /* SUFL_20_30_30.sto */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_20_30_30.sto; sourceTree = "<group>"; };
+		7EAA50F222973CA200AF4875 /* SUFL_20_30_30.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_20_30_30.cor; sourceTree = "<group>"; };
+		7EAA50F422973CA200AF4875 /* SUFL_20_80_50.tim */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_20_80_50.tim; sourceTree = "<group>"; };
+		7EAA50F522973CA200AF4875 /* SUFL_20_80_50.sto */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_20_80_50.sto; sourceTree = "<group>"; };
+		7EAA50F622973CA200AF4875 /* SUFL_20_80_50.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_20_80_50.cor; sourceTree = "<group>"; };
 		7ECD26392238B2B900F11974 /* SD_xcode */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SD_xcode; sourceTree = BUILT_PRODUCTS_DIR; };
 		7ECD26452238B32B00F11974 /* pltexpA3_16.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pltexpA3_16.cor; sourceTree = "<group>"; };
 		7ECD26462238B32B00F11974 /* pltexpA3_16.tim */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pltexpA3_16.tim; sourceTree = "<group>"; };
@@ -293,6 +299,35 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7EAA50EE22973CA200AF4875 /* SUFL */ = {
+			isa = PBXGroup;
+			children = (
+				7EAA50EF22973CA200AF4875 /* SUFL_20_30_30 */,
+				7EAA50F322973CA200AF4875 /* SUFL_20_80_50 */,
+			);
+			path = SUFL;
+			sourceTree = "<group>";
+		};
+		7EAA50EF22973CA200AF4875 /* SUFL_20_30_30 */ = {
+			isa = PBXGroup;
+			children = (
+				7EAA50F022973CA200AF4875 /* SUFL_20_30_30.tim */,
+				7EAA50F122973CA200AF4875 /* SUFL_20_30_30.sto */,
+				7EAA50F222973CA200AF4875 /* SUFL_20_30_30.cor */,
+			);
+			path = SUFL_20_30_30;
+			sourceTree = "<group>";
+		};
+		7EAA50F322973CA200AF4875 /* SUFL_20_80_50 */ = {
+			isa = PBXGroup;
+			children = (
+				7EAA50F422973CA200AF4875 /* SUFL_20_80_50.tim */,
+				7EAA50F522973CA200AF4875 /* SUFL_20_80_50.sto */,
+				7EAA50F622973CA200AF4875 /* SUFL_20_80_50.cor */,
+			);
+			path = SUFL_20_80_50;
+			sourceTree = "<group>";
+		};
 		7ECD26302238B2B900F11974 = {
 			isa = PBXGroup;
 			children = (
@@ -324,6 +359,7 @@
 		7ECD26432238B32B00F11974 /* spInput */ = {
 			isa = PBXGroup;
 			children = (
+				7EAA50EE22973CA200AF4875 /* SUFL */,
 				7ECD26442238B32B00F11974 /* pltexpA3_16 */,
 				7ECD26482238B32B00F11974 /* cap41 */,
 				7ECD264C2238B32B00F11974 /* dim4 */,
@@ -1227,6 +1263,8 @@
 					"BASIS_CHECK=1",
 					"ALGO_CHECK=1",
 					"DECOMPOSE_CHECK=1",
+					"SETUP_CHECK=1",
+					"CUT_CHECK=1",
 				);
 				HEADER_SEARCH_PATHS = (
 					/Applications/CPLEX_Studio128/cplex/include,

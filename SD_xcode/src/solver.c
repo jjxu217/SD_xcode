@@ -93,11 +93,12 @@ double getObjective(LPptr lp, int type) {
 			exit(1);
 		}
 	}
-	else
+    else if (type == PROB_MILP || type == PROB_MIQP){
 		if(status != MIP_OPTIMAL && status != MIP_OPTIMAL_TOL ) {
 			solverErrmsg(status);
 			exit(1);
 		}
+    }
 
 	return ans;
 }//END getObjective()
@@ -112,6 +113,24 @@ int getPrimal(LPptr lp, vector X, int length) {
 		X[0] = oneNorm(X+1, length);
 
 	return status;
+}//END getPrimal()
+
+int getMIPPrimal(LPptr lp, vector X, int length) {
+    int status,i;
+    double temp[2 * length + 1];
+    
+    if(CPXgetnumcols(env, lp) != 2 * length + 1)
+        errMsg("check", "getMIPPrimal", "the number of columns for MIP master is incorrext", 0);
+    status = CPXgetx(env, lp, temp, 0, 2 * length);
+    if ( status )
+        solverErrmsg(status);
+    
+    for(i = 0; i < length; i++){
+        X[1+i] = temp[i] - temp[i+length+1];
+    }
+    X[0] = oneNorm(X+1, length);
+    
+    return status;
 }//END getPrimal()
 
 double getPrimalPoint(LPptr lp, int idx) {
@@ -593,13 +612,73 @@ int getBasisInvACol(LPptr lp, int i, vector phi) {
 
 int copyQPseparable(LPptr lp, vector qsepvec){
 	int status;
-	/* NOTE: CPLEX evaluates the corresponding objective with a factor of 0.5 in front of the quadratic objective term.*/
+	/* NOTE: CPLEX evaluates the corresponding objective with a factor of 0.5 in front of the quadratic objective term. please check to see if this needs an adjustment*/
 	status = CPXcopyqpsep (env, lp, qsepvec);
 	if(status)
 		solverErrmsg(status);
 
 	return status;
 }//END copy_qp_separable()
+
+
+//int getObj(LPptr lp, vector objs, int begin, int end){
+//    int status;
+//    status = CPXgetobj(env, lp, objs, begin, end);
+//    return status;
+//}
+
+int addcols(LPptr lp, int ccnt, int nzcnt, vector obj, intvec matbeg, intvec cmatind, vector cmatval, vector lb,
+            vector ub, string* colname){
+    int status=0;
+    
+    status = CPXaddcols (env, lp, ccnt, nzcnt, obj, matbeg,
+                         cmatind, cmatval, lb, ub, colname);
+    if ( status )
+        solverErrmsg(status);
+    return status;
+}
+
+
+/*new obj coeff = old obj coeff + sigma*/
+//int update_objx(LPptr lp, int cnt, vector new_obj){
+//    int n, status;
+//    intvec indices;
+//
+//    if (!(indices = arr_alloc(2 * cnt + 1, int)))
+//        errMsg("Allocation", "update_obj_plus", "indices",0);
+//
+//
+//    for (n = 0; n < cnt; n++){
+//        indices[n] = n;
+//        new_obj_plus[n] += sigma;
+//    }
+//
+//    changeObjx(lp, cnt, indices, new_obj_plus);
+//
+//    mem_free(indices);
+//    return status;
+//}
+
+//int setup_d_minus(LPptr lp, int cnt, vector new_obj_minus, double sigma){
+//    int n, status;
+//    intvec indices;
+//    
+//    if (!(indices = arr_alloc(cnt+1, int)))
+//        errMsg("Allocation", "update_obj_plus", "indices",0);
+//    
+//    status = CPXgetobj(env, lp, new_obj_plus, 0, cnt - 1);
+//    if ( status )
+//        solverErrmsg(status);
+//    for (n = 0; n < cnt; n++){
+//        indices[n] = n;
+//        new_obj_plus[n] += sigma;
+//    }
+//    
+//    changeObjx(lp, cnt, indices, new_obj_plus);
+//    
+//    mem_free(indices);
+//    return status;
+//}
 
 int changeCoef(LPptr lp, int row, int col, double val) {
 	int status;
@@ -609,7 +688,7 @@ int changeCoef(LPptr lp, int row, int col, double val) {
 		solverErrmsg(status);
 
 	return status;
-}//END changeObjx()
+}//END changeCoef()
 
 int changeObjx(LPptr lp, int cnt, intvec indices, vector values){
 	int status;

@@ -133,10 +133,10 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 		cell->k++;
 		tic = clock();
 #if defined(STOCH_CHECK) || defined(ALGO_CHECK)
-		printf("\nIteration-%d :: \n" , cell->k);
+		printf("\nMyIteration-%d :: \n" , cell->k);
 #else
 		if ( (cell->k -1) % 100 == 0) {
-			printf("\nIteration-%4d: ", cell->k);
+			printf("\nMyIteration-%4d: ", cell->k);
 		}
 #endif
 

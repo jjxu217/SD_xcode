@@ -22,7 +22,7 @@ int addCut2Pool(cellType *cell, oneCut *cut, int lenX, double lb, BOOL feasCut);
 int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb) {
 	oneCut 	*cut;
 	int    	cutIdx;
-	BOOL	newBasisFlag=TRUE;
+	BOOL	newBasisFlag;
 
 	/* (a) Construct the subproblem with input observation and master solution, solve the subproblem, and complete stochastic updates */
 	if ( solveSubprob(prob[1], cell->subprob, Xvect, cell->basis, cell->lambda, cell->sigma, cell->delta, config.MAX_ITER,
@@ -101,6 +101,7 @@ oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma
 	/* Pre-compute pi x Cbar x x as it is independent of observations */
 	if (!(piCbarX= arr_alloc(sigma->cnt, double)))
 		errMsg("Allocation", "SDCut", "pi_Tbar_x",0);
+    printf("SD:sigma->cnt: = %d\n", sigma->cnt);
 	for (c = 0; c < sigma->cnt; c++)
 		piCbarX[c] = vXv(sigma->vals[c].piC, Xvect, coord->CCols, num->cntCcols);
 
@@ -141,29 +142,38 @@ oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma
 		if ( num->rvdOmCnt > 0 ) {
 			for ( idx = 0; idx <= basis->vals[istar]->phiLength; idx++ ) {
 				sigmaIdx = basis->vals[istar]->sigmaIdx[idx];
-				lambdaIdx = sigma->lambdaIdx[sigmaIdx];
+				
 				if ( idx == 0 )
 					multiplier = 1.0;
 				else
 					multiplier = omega->vals[obs][coord->rvOffset[2] + basis->vals[istar]->omegaIdx[idx]];
 
-				/* Start with (Pi x bBar) + (Pi x bomega) + (Pi x Cbar) x X */
-				alpha += omega->weights[obs] * multiplier * (sigma->vals[sigmaIdx].pib + delta->vals[lambdaIdx][obs].pib);
+				/* Start with (Pi x bBar) + (Pi x bomega) + (Pi x Cbar + Pi x Comega) x X
+                 alpha = Pi x bBar + Pi x bomega, beta = Pi x Cbar + Pi x Comega. If num->rvRowCnt == 0, bomega/Comega is empty*/
+                
+				alpha += omega->weights[obs] * multiplier * sigma->vals[sigmaIdx].pib ;
 
 				for (c = 1; c <= num->cntCcols; c++)
 					beta[coord->CCols[c]] += omega->weights[obs] * multiplier * sigma->vals[sigmaIdx].piC[c];
-				for (c = 1; c <= num->rvCOmCnt; c++)
-					beta[coord->rvCOmCols[c]] += omega->weights[obs] * multiplier * delta->vals[lambdaIdx][obs].piC[c];
+                if (num->rvRowCnt != 0){
+                    lambdaIdx = sigma->lambdaIdx[sigmaIdx];
+                    alpha += omega->weights[obs] * multiplier * delta->vals[lambdaIdx][obs].pib;
+                    for (c = 1; c <= num->rvCOmCnt; c++)
+                        beta[coord->rvCOmCols[c]] += omega->weights[obs] * multiplier * delta->vals[lambdaIdx][obs].piC[c];
+                }
 			}
 		}
 		else {
 			alpha += sigma->vals[istar].pib * omega->weights[obs];
-			alpha += delta->vals[sigma->lambdaIdx[istar]][obs].pib * omega->weights[obs];
 
 			for (c = 1; c <= num->cntCcols; c++)
 				beta[coord->CCols[c]] += sigma->vals[istar].piC[c] * omega->weights[obs];
-			for (c = 1; c <= num->rvCOmCnt; c++)
-				beta[coord->rvCols[c]] += delta->vals[sigma->lambdaIdx[istar]][obs].piC[c] * omega->weights[obs];
+            
+            if (num->rvRowCnt != 0){
+                alpha += delta->vals[sigma->lambdaIdx[istar]][obs].pib * omega->weights[obs];
+                for (c = 1; c <= num->rvCOmCnt; c++)
+                    beta[coord->rvCols[c]] += delta->vals[sigma->lambdaIdx[istar]][obs].piC[c] * omega->weights[obs];
+            }
 		}
 	}
 

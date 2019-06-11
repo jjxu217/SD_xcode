@@ -127,7 +127,8 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 	}
 	else
 		basis->obsFeasible[basis->cnt] = NULL;
-
+    
+    printf("basis->cnt = %d", basis->cnt);
 	return basis->cnt++;
 
 }//End stochasticUpdates()
@@ -135,7 +136,7 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 /*This function loops through all the dual vectors found so far and returns the index of the one which satisfies the expression:
  * 				argmax { Pi x (R - T x X) | all Pi }
  * where X, R, and T are given.  It is calculated in this form:
- * 				Pi x bBar + Pi x bomega + (Pi x Cbar) x X + (Pi x Comega) x X.
+ * 				Pi x bBar + Pi x bomega - (Pi x Cbar) x X - (Pi x Comega) x X.
  * Since the Pi's are stored in two different structures (sigma and delta), the index to the maximizing Pi is actually a structure
  * containing two indices.  (While both indices point to pieces of the dual vectors, sigma and delta may not be in sync with one
  * another due to elimination of non-distinct or redundant vectors. */
@@ -163,16 +164,30 @@ int computeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *si
 			if ( basis->obsFeasible[cnt][obs] ) {
 				arg = 0.0;
 				for ( c = 0; c <= basis->vals[cnt]->phiLength; c++ ) {
-					sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
-					lambdaIdx = sigma->lambdaIdx[sigmaIdx];
-					if ( c == 0 )
-						multiplier = 1.0;
-					else
-						multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
-
-					/* Start with (Pi x bBar) + (Pi x bomega) + (Pi x Cbar) x X */
-					arg += multiplier*(sigma->vals[sigmaIdx].pib + delta->vals[lambdaIdx][obs].pib - piCbarX[sigmaIdx]);
-					arg -= multiplier*vXv(delta->vals[lambdaIdx][obs].piC, Xvect, coord->rvCOmCols, num->rvCOmCnt);
+                    /*if RHS contain RVs, then bomega/Comega is not zero*/
+                    if (num->rvRowCnt != 0){
+                        sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                        lambdaIdx = sigma->lambdaIdx[sigmaIdx];
+                        if ( c == 0 )
+                            multiplier = 1.0;
+                        else
+                            multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                        /* Start with (Pi x bBar) + (Pi x bomega) - (Pi x Cbar) x X */
+                        arg += multiplier*(sigma->vals[sigmaIdx].pib + delta->vals[lambdaIdx][obs].pib - piCbarX[sigmaIdx]);
+                        arg -= multiplier*vXv(delta->vals[lambdaIdx][obs].piC, Xvect, coord->rvCOmCols, num->rvCOmCnt);
+                    }
+                    /*otherwise, the randomness only in the cost coeff. delta/lambda structures are empty*/
+                    else{
+                        sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                        if ( c == 0 )
+                            multiplier = 1.0;
+                        else
+                            multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                        
+                        /* Start with (Pi x bBar)  - (Pi x Cbar) x X */
+                        arg += multiplier*(sigma->vals[sigmaIdx].pib  - piCbarX[sigmaIdx]);
+            
+                    }
 				}
 
 				if (arg > (*argmax)) {
@@ -183,7 +198,7 @@ int computeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *si
 		}
 	}
 
-	if ( (*argmax == -DBL_MAX ) )
+    if ( *argmax == -DBL_MAX  )
 		return -1;
 	else
 		return maxCnt;
@@ -199,14 +214,16 @@ int calcDelta(numType *num, coordType *coord, lambdaType *lambda, deltaType *del
 	vector 		 lambdaPi, piCrossC;
 	int 		 idx;
 
+    if (num->rvRowCnt == 0)
+        return -1;
 	/* extract the coordinates and number of random elements */
 	bOmega.cnt = num->rvbOmCnt;	bOmega.col = coord->rvbOmRows;
 	COmega.cnt = num->rvCOmCnt; COmega.col = coord->rvCOmCols; COmega.row = coord->rvCOmRows;
 
-        if ( newOmegaFlag ) {
-		/* Case I: New observation encountered. */
-		bOmega.val= omega->vals[elemIdx];
-		COmega.val = omega->vals[elemIdx] + num->rvbOmCnt;
+    if ( newOmegaFlag ) {
+    /* Case I: New observation encountered. */
+    bOmega.val= omega->vals[elemIdx];
+    COmega.val = omega->vals[elemIdx] + num->rvbOmCnt;
 
 		/* For all dual vectors, lambda(pi), calculate pi X bomega and pi X Comega */
 		for (idx = 0; idx < lambda->cnt; idx++) {
@@ -265,6 +282,10 @@ int calcLambda(numType *num, coordType *coord, vector Pi, lambdaType *lambda, BO
 	int 	pi_idx;
 	vector	lambda_pi;
 
+    if (num->rvRowCnt == 0){
+        *newLambdaFlag = FALSE;
+        return -1;
+    }
 	/* Pull out only those elements in dual vector which have rv's */
 	lambda_pi = reduceVector(Pi, coord->rvRows, num->rvRowCnt);
 
@@ -315,6 +336,7 @@ int calcSigma(numType *num, coordType *coord, sparseVector *bBar, sparseMatrix *
 	sigma->lambdaIdx[sigma->cnt] = idxLambda;
 	sigma->ck[sigma->cnt] = currentIter;
 
+    printf("sigma->cnt: = %d\n", sigma->cnt);
 	return sigma->cnt++;
 
 }//END calcSigma()

@@ -41,7 +41,7 @@ typedef struct {
 	intvec	rvCols;			/* list of all columns in transfer matrix with at least one random element */
 	intvec	rvRows;			/* list of all rows with at least one random variable */
 	intvec	rvbOmRows;		/* list of all right-hand sides with random variables */
-	intvec	rvdOmCols;		/* list of all columns with cost coefficients with random variables */
+	intvec	rvdOmCols;		/* list of all columns with cost coefficients with random variables, column number starts from 1 */
 	intvec	rvCOmCols;		/* list of all columns with coefficients with random variables */
 	intvec	rvCOmRows;		/* list of all rows with coefficients with random variables */
 	intvec	rvOffset;		/* Index where the random variable begin - right-hand side, transfer matrix, and cost coefficients. */

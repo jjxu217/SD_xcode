@@ -28,7 +28,9 @@ int solveProblem(LPptr lp, string pname, int type, int *status) {
 		(*status) = CPXqpopt(env, lp);
 		break;
 	case PROB_MILP:
+        setIntParam(PARAM_PREIND, OFF);
 		(*status) = CPXmipopt(env, lp);
+        setIntParam(PARAM_PREIND, ON);
 		break;
 	case PROB_MIQP:
 		(*status) = CPXmipopt(env, lp);

@@ -26,7 +26,7 @@ void calcBasis(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, one
 
 	/* Compute the phi matrix associated with the current basis. We begin by first identifying the basis header. A negative
 	 * value in basis header indicates a slack row. */
-    getBasisHead(lp, basisHead+1, NULL);//Jiajun Question: why basisHead+1?
+	getBasisHead(lp, basisHead+1, NULL);
 
 	/* Compute the phi matrix header and extract the basis (of the dual) inverse matrix rows corresponding to the header. */
 	for ( i = 1; i <= num->rvdOmCnt; i++ ) {		/* Loop through all the columns with random cost coefficients to see if any of them are basic */
@@ -36,7 +36,7 @@ void calcBasis(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, one
 				if ( !(B->phi = (vector *) arr_alloc(num->rvdOmCnt, vector)) )
 					errMsg("allocation", "newBasis", "B->phi", 0);
 				if ( !(B->omegaIdx = (intvec) arr_alloc(num->rvdOmCnt+1, int)) )
-					errMsg("allocation", "newBasis", "B->lambdaIdx", 0);
+					errMsg("allocation", "newBasis", "B->omegaIdx", 0);
 			}
 			if ( !(B->phi[B->phiLength] = (vector) arr_alloc(basisDim+1, double)) )
 				errMsg("allocation", "calcBasis", "B->phi[i]", 0);
@@ -44,7 +44,9 @@ void calcBasis(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, one
 			B->omegaIdx[++B->phiLength] = i;
 		}
 	}
-
+//    for ( i = 1; i <= B->phiLength; i++ )
+//        printf("B->omegaIdx[%d]=%d ",i, B->omegaIdx[i]);
+    
 	if ( B->phiLength > 0 ) {
 		/* Reallocate memory to elements already assigned and initialize for the remainder of the elements. */
 		B->phi = (vector *) mem_realloc(B->phi, B->phiLength*sizeof(vector));
@@ -66,16 +68,16 @@ void calcBasis(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, one
 	costVector = expandVector(dBar->val, dBar->col, dBar->cnt, num->cols);
 	for ( i = 1; i <= basisDim; i++ ) {
 		if ( basisHead[i] >= 0 )
-			basicCost[i] = costVector[basisHead[i]+1];
+            basicCost[i] = costVector[basisHead[i]+1]; // basicCost length is num_row, costVector length is num_cols
 	}
 
 	if ( !(tempPsiRow = (vector) arr_alloc(num->rows+1, double)) )
 		errMsg("allocation", "newBasis", "tempPsiRow", 0);
 
 	for ( i = 1; i <= num->cols; i++ ) {
-		getBasisInvACol(lp, i-1, tempPsiRow+1);
+		getBasisInvACol(lp, i-1, tempPsiRow+1); //tempPsiRow = B^{-1} A_i
 
-		B->gBar[i] = costVector[i] - vXv(tempPsiRow, basicCost, NULL, num->rows);
+        B->gBar[i] = costVector[i] - vXv(tempPsiRow, basicCost, NULL, num->rows); //reduced cost: c_i - c^T_B B^{-1} A_i
 
 		for ( j = 1; j <= B->phiLength; j++ ) {
 			B->psi->row[B->psi->cnt+1] = i;
@@ -100,7 +102,12 @@ void calcBasis(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, one
 		printf("\tPhi = NULL\n");
 	}
 	printf("Deterministic component of reduced cost  = ");
-	printSparseVector(B->gBar+1, basisHead, num->rows);
+    int n;
+    for ( n = 1; n <= num->rows; n++ )
+        if ( basisHead[n] >= 0 )
+            printf("%4.3lf\t", B->gBar[basisHead[n] + 1]);
+    printf("\n");
+
 #endif
 
 #if defined(BASIS_CHECK)

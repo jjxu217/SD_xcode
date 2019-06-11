@@ -1094,6 +1094,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 7ECD26302238B2B900F11974;
 			productRefGroup = 7ECD263A2238B2B900F11974 /* Products */;
@@ -1259,8 +1260,6 @@
 				DEVELOPMENT_TEAM = JBP2638P2L;
 				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = (
 					"DEBUG=1",
-					"STOCH_CHECK=1",
-					"BASIS_CHECK=1",
 					"ALGO_CHECK=1",
 					"DECOMPOSE_CHECK=1",
 					"SETUP_CHECK=1",

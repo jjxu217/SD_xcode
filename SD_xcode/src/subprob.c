@@ -84,10 +84,11 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
 		(*argmaxTime) += ((double) (clock()-tic))/CLOCKS_PER_SEC;
 
 #ifdef STOCH_CHECK
-		obj = sigma->vals[status].pib - vXv(sigma->vals[status].piC, Xvect, prob->coord->CCols, prob->num->cntCcols);
-		obj += delta->vals[sigma->lambdaIdx[status]][omegaIdx].pib - vXv(delta->vals[sigma->lambdaIdx[status]][omegaIdx].piC,
-				omega->vals[omegaIdx], prob->coord->rvCOmCols, prob->num->rvCOmCnt);
-		printf("Objective function estimate    = %lf\n", obj);
+        //delta_d is missed
+//        obj = sigma->vals[status].pib - vXv(sigma->vals[status].piC, Xvect, prob->coord->CCols, prob->num->cntCcols);
+//        obj += delta->vals[sigma->lambdaIdx[status]][omegaIdx].pib - vXv(delta->vals[sigma->lambdaIdx[status]][omegaIdx].piC,
+//                omega->vals[omegaIdx], prob->coord->rvCOmCols, prob->num->rvCOmCnt);
+//        printf("Objective function estimate    = %lf\n", obj);
 #endif
 	}
 

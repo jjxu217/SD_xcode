@@ -90,17 +90,17 @@ void calcBasis(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, one
 #if defined (STOCH_CHECK)
 	printf("New basis identified     :: \n");
 	printf("\tNumber of basic columns with random cost coefficients      = %d\n", B->phiLength);
-	if ( B->phiLength > 0 ) {
-		printf("\tIndex in observation vector corresponding to basic columns = "); printIntvec(B->omegaIdx, B->phiLength, NULL);
-		printf("\tPhi = ");
-		for (int i = 0; i < B->phiLength; i++ ) {
-			printf("\t\t"); printVector(B->phi[i], num->rows, NULL);
-		}
-	}
-	else {
-		printf("\tBasic stochastic columns                                   = NULL\n");
-		printf("\tPhi = NULL\n");
-	}
+//    if ( B->phiLength > 0 ) {
+//        printf("\tIndex in observation vector corresponding to basic columns = "); printIntvec(B->omegaIdx, B->phiLength, NULL);
+//        printf("\tPhi = ");
+//        for (int i = 0; i < B->phiLength; i++ ) {
+//            printf("\t\t"); printVector(B->phi[i], num->rows, NULL);
+//        }
+//    }
+//    else {
+//        printf("\tBasic stochastic columns                                   = NULL\n");
+//        printf("\tPhi = NULL\n");
+//    }
 	printf("Deterministic component of reduced cost  = ");
     int n;
     for ( n = 1; n <= num->rows; n++ )
@@ -228,7 +228,9 @@ BOOL checkBasisFeasibility(oneBasis *B, sparseVector dOmega, string senx, int nu
 
 #if defined(BASIS_CHECK)
 		printf("Re-constructed dual solution: \n");
-		printVector(B->piDet, numRows, NULL);
+		printf("Det Components: \n");
+        printVector(B->piDet, numRows, NULL);
+        printf("Sto Components: \n");
 		if ( B->phiLength > 0 )
 			printVector(theta, numRows, NULL);
 #endif

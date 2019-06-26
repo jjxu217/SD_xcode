@@ -334,9 +334,9 @@ LPptr setupProblem(string name, int type, int numcols, int numrows, int objsense
 		mem_free(indices);
 	}
 
-//#ifdef DEBUG
-//    writeProblem(lp, "after_change_ctype.lp");
-//#endif
+#ifdef DEBUG
+    writeProblem(lp, "after_change_ctype.lp");
+#endif
 	return lp;
 }//END setupProblem()
 

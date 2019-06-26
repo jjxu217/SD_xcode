@@ -15,14 +15,16 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 		omegaType *omega, int omegaIdx, BOOL newOmegaFlag, int currentIter, double TOLERANCE, BOOL *newBasisFlag, BOOL subFeasFlag) {
 	oneBasis *B;
 	sparseVector dOmega;
-	int 	cnt, lambdaIdx;
-	BOOL	newSigmaFlag, newLambdaFlag, retainBasis;
+	int 	cnt, lambdaIdx=-1;
+	BOOL	newSigmaFlag, newLambdaFlag=TRUE, retainBasis;
 
 	dOmega.cnt = prob->num->rvdOmCnt; dOmega.col = prob->coord->rvdOmCols;
 
 	/* Update the column of delta structure if a new observation was encountered, and check the feasibility of existing bases with respect to new observation. */
 	if ( newOmegaFlag ) {
-		calcDelta(prob->num, prob->coord, lambda, delta, deltaRowLength, omega, newOmegaFlag, omegaIdx);
+        if (prob->num->rvRowCnt > 0){
+            calcDelta(prob->num, prob->coord, lambda, delta, deltaRowLength, omega, newOmegaFlag, omegaIdx);
+        }
 
 		/* Establish feasibility of basis with respect to current observations */
 		dOmega.val = prob->coord->rvOffset[2]+omega->vals[omegaIdx];
@@ -75,26 +77,29 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 	}
 
 	/* Elements of deterministic component of dual solution corresponding to rows with random elements in them */
-	lambdaIdx = calcLambda(prob->num, prob->coord, B->piDet, lambda, &newLambdaFlag, TOLERANCE);
+    if (prob->num->rvRowCnt > 0)
+        lambdaIdx = calcLambda(prob->num, prob->coord, B->piDet, lambda, &newLambdaFlag, TOLERANCE);
 
 	/* Elements of deterministic component of dual solution with deterministic (mean value) right-hand side and transfer matrix. */
 	B->sigmaIdx[0] = calcSigma(prob->num, prob->coord, prob->bBar, prob->Cbar, B->piDet, B->mubBar,
 			lambdaIdx, newLambdaFlag, currentIter, sigma, &newSigmaFlag, TOLERANCE);
 
-	if ( newLambdaFlag )
-		calcDelta(prob->num, prob->coord, lambda, delta, deltaRowLength, omega, FALSE, lambdaIdx);
+    if ( prob->num->rvRowCnt > 0 && newLambdaFlag )
+        calcDelta(prob->num, prob->coord, lambda, delta, deltaRowLength, omega, FALSE, lambdaIdx);
 
 	retainBasis = newSigmaFlag;
 	for (cnt = 0; cnt < B->phiLength; cnt++ ) {
 		/* Elements of basis column corresponding to rows with random elements in them */
-		lambdaIdx = calcLambda(prob->num, prob->coord, B->phi[cnt], lambda, &newLambdaFlag, TOLERANCE);
+        if (prob->num->rvRowCnt > 0){
+            lambdaIdx = calcLambda(prob->num, prob->coord, B->phi[cnt], lambda, &newLambdaFlag, TOLERANCE);
+        }
 
 		/* Compute the product of basis column with deterministic (mean value) right-hand side and transfer matrix. */
 		B->sigmaIdx[cnt+1] = calcSigma(prob->num, prob->coord, prob->bBar, prob->Cbar, B->phi[cnt], 0,
 				lambdaIdx, newLambdaFlag, currentIter, sigma, &newSigmaFlag, TOLERANCE);
 
-		if ( newLambdaFlag )
-			calcDelta(prob->num, prob->coord, lambda, delta, deltaRowLength, omega, FALSE, lambdaIdx);
+        if ( prob->num->rvRowCnt > 0 && newLambdaFlag )
+            calcDelta(prob->num, prob->coord, lambda, delta, deltaRowLength, omega, FALSE, lambdaIdx);
 		retainBasis = (retainBasis || newSigmaFlag);
 	}
 
@@ -116,6 +121,9 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
     /* Add the basis to the structure */ 
 	basis->vals[basis->cnt] = B;
 
+//    printf("sigma val in StochasticUpdates2():");
+//    printVector(sigma->vals[0].piC, prob->num->cntCcols, NULL);
+    
 	if ( B->feasFlag ) {
 		/* Establish feasibility of basis with respect to current observations */
 		if ( !(basis->obsFeasible[basis->cnt] = (BOOL*) arr_alloc(deltaRowLength, BOOL)) )
@@ -125,8 +133,11 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 			basis->obsFeasible[basis->cnt][cnt] = checkBasisFeasibility(B, dOmega, prob->sp->senx, prob->num->cols, prob->num->rows, TOLERANCE);
 		}
 	}
-	else
+    else{
 		basis->obsFeasible[basis->cnt] = NULL;
+    }
+//    printf("sigma val in StochasticUpdates3():");
+//    printVector(sigma->vals[0].piC, prob->num->cntCcols, NULL);
     
     printf("basis->cnt = %d", basis->cnt);
 	return basis->cnt++;
@@ -134,8 +145,8 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 }//End stochasticUpdates()
 
 /*This function loops through all the dual vectors found so far and returns the index of the one which satisfies the expression:
- * 				argmax { Pi x (R - T x X) | all Pi }
- * where X, R, and T are given.  It is calculated in this form:
+ * 				argmax { Pi x (b - C x X) | all Pi }
+ * where X, b, and C are given.  It is calculated in this form:
  * 				Pi x bBar + Pi x bomega - (Pi x Cbar) x X - (Pi x Comega) x X.
  * Since the Pi's are stored in two different structures (sigma and delta), the index to the maximizing Pi is actually a structure
  * containing two indices.  (While both indices point to pieces of the dual vectors, sigma and delta may not be in sync with one
@@ -165,7 +176,7 @@ int computeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *si
 				arg = 0.0;
 				for ( c = 0; c <= basis->vals[cnt]->phiLength; c++ ) {
                     /*if RHS contain RVs, then bomega/Comega is not zero*/
-                    if (num->rvRowCnt != 0){
+                    if (num->rvRowCnt > 0){
                         sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
                         lambdaIdx = sigma->lambdaIdx[sigmaIdx];
                         if ( c == 0 )
@@ -317,26 +328,45 @@ int calcSigma(numType *num, coordType *coord, sparseVector *bBar, sparseMatrix *
 	piCBar = reduceVector(temp, coord->CCols, num->cntCcols);
 	mem_free(temp);
 
-	if (!newLambdaFlag){
+
+	if (num->rvRowCnt == 0){
 		for (cnt = 0; cnt < sigma->cnt; cnt++) {
 			if (DBL_ABS(pibBar - sigma->vals[cnt].pib) <= TOLERANCE) {
-				if (equalVector(piCBar, sigma->vals[cnt].piC, num->cntCcols, TOLERANCE))
-					if(sigma->lambdaIdx[cnt]== idxLambda){
+                if (equalVector(piCBar, sigma->vals[cnt].piC, num->cntCcols, TOLERANCE)){
 						mem_free(piCBar);
 						(*newSigmaFlag) = FALSE;
 						return cnt;
-					}
+                }
 			}
 		}
 	}
+    else{
+        if (!newLambdaFlag){
+            for (cnt = 0; cnt < sigma->cnt; cnt++) {
+                if (DBL_ABS(pibBar - sigma->vals[cnt].pib) <= TOLERANCE) {
+                    if (equalVector(piCBar, sigma->vals[cnt].piC, num->cntCcols, TOLERANCE))
+                        if(sigma->lambdaIdx[cnt]== idxLambda){
+                            mem_free(piCBar);
+                            (*newSigmaFlag) = FALSE;
+                            return cnt;
+                        }
+                }
+            }
+        }
+    }
 
 	(*newSigmaFlag) = TRUE;
 	sigma->vals[sigma->cnt].pib  = pibBar;
 	sigma->vals[sigma->cnt].piC  = piCBar;
-	sigma->lambdaIdx[sigma->cnt] = idxLambda;
 	sigma->ck[sigma->cnt] = currentIter;
-
+    if (num->rvRowCnt > 0){
+        sigma->lambdaIdx[sigma->cnt] = idxLambda;}
+    
+#ifdef DEBUG
     printf("sigma->cnt: = %d\n", sigma->cnt);
+    printVector(sigma->vals[0].piC, num->cntCcols, NULL);
+    printVector(sigma->vals[sigma->cnt].piC, num->cntCcols, NULL);
+#endif
 	return sigma->cnt++;
 
 }//END calcSigma()
@@ -432,15 +462,16 @@ lambdaType *newLambda(int num_iter, int numLambda, int numRVrows) {
 
 /* This function creates a new sigma structure, and allocates memory for the arrays associated with it.  It returns a pointer to this structure.
  * Some pi X T vectors are also allocated, according to the num_vals parameter  (num_vals is expected to be less than num_sigmas, so that there
- * is room for further work).  Note that  memory for sigma->col is not allocated, but is taken from prob.*/
+ * is room for further work).  Note that  memory for sigma->vals is not allocated, but is taken from prob.*/
 sigmaType *newSigma(int numIter, int numNzCols, int numPi) {
 	sigmaType *sigma;
 	int cnt;
 
 	if (!(sigma = (sigmaType *) mem_malloc (sizeof(sigmaType))))
 		errMsg("allocation", "newSigma", "sigma",0);
-	if (!(sigma->lambdaIdx = (intvec) arr_alloc(numIter, int)))
-		errMsg("allocation", "newSigma", "sigma->lambIdx",0);
+    if (!(sigma->lambdaIdx = (intvec) arr_alloc(numIter, int)))
+        errMsg("allocation", "newSigma", "sigma->lambIdx",0);
+//    sigma->lambdaIdx = NULL;
 	if (!(sigma->ck = (intvec) arr_alloc(numIter, int)))
 		errMsg("allocation", "newSigma", "sigma->ck",0);
 	if (!(sigma->vals = arr_alloc(numIter, pixbCType)))
@@ -530,13 +561,22 @@ void freeSigmaType(sigmaType *sigma, BOOL partial) {
 	int n;
 
 	if (sigma) {
-		for ( n = 0; n < sigma->cnt; n++ )
-			if (sigma->vals[n].piC) mem_free(sigma->vals[n].piC);
+        for ( n = 0; n < sigma->cnt; n++ ){
+            if (sigma->vals[n].piC){
+#ifdef DEBUG
+//                printf("sigma val[%d] in freeCellType():", n);
+//                printVector(sigma->vals[n].piC, 3, NULL);
+#endif
+                mem_free(sigma->vals[n].piC);
+            }
+        }
 		if ( partial ) {
 			sigma->cnt = 0;
 			return;
 		}
-		if (sigma->lambdaIdx) mem_free(sigma->lambdaIdx);
+        if (sigma->lambdaIdx) {
+            printf("sigma->lambdaIdx addressOX%p\n", sigma->lambdaIdx);
+            mem_free(sigma->lambdaIdx);}
 		if (sigma->vals) mem_free(sigma->vals);
 		if (sigma->ck) mem_free(sigma->ck);
 		mem_free(sigma);

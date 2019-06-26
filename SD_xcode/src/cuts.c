@@ -102,8 +102,13 @@ oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma
 	if (!(piCbarX= arr_alloc(sigma->cnt, double)))
 		errMsg("Allocation", "SDCut", "pi_Tbar_x",0);
     printf("SD:sigma->cnt: = %d\n", sigma->cnt);
-	for (c = 0; c < sigma->cnt; c++)
+    for (c = 0; c < sigma->cnt; c++){
+#ifdef DEBUG
+        printf("c=%d ",c);
+        printVector(sigma->vals[c].piC, num->cntCcols, NULL);
+#endif
 		piCbarX[c] = vXv(sigma->vals[c].piC, Xvect, coord->CCols, num->cntCcols);
+    }
 
 	if ( !(beta = (vector) arr_alloc(num->prevCols + 1, double)) )
 		errMsg("Allocation", "SDCut", "beta", 0);
@@ -155,7 +160,7 @@ oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma
 
 				for (c = 1; c <= num->cntCcols; c++)
 					beta[coord->CCols[c]] += omega->weights[obs] * multiplier * sigma->vals[sigmaIdx].piC[c];
-                if (num->rvRowCnt != 0){
+                if (num->rvRowCnt > 0){
                     lambdaIdx = sigma->lambdaIdx[sigmaIdx];
                     alpha += omega->weights[obs] * multiplier * delta->vals[lambdaIdx][obs].pib;
                     for (c = 1; c <= num->rvCOmCnt; c++)
@@ -169,7 +174,7 @@ oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma
 			for (c = 1; c <= num->cntCcols; c++)
 				beta[coord->CCols[c]] += sigma->vals[istar].piC[c] * omega->weights[obs];
             
-            if (num->rvRowCnt != 0){
+            if (num->rvRowCnt > 0){
                 alpha += delta->vals[sigma->lambdaIdx[istar]][obs].pib * omega->weights[obs];
                 for (c = 1; c <= num->rvCOmCnt; c++)
                     beta[coord->rvCols[c]] += delta->vals[sigma->lambdaIdx[istar]][obs].piC[c] * omega->weights[obs];
@@ -496,15 +501,19 @@ int updtFeasCutPool(numType *num, coordType *coord, cellType *cell) {
 				cut = newCut(num->prevCols, 0, 1);
 
 				sigmaIdx = cell->basis->vals[idx]->sigmaIdx[0];
-				lambdaIdx = cell->sigma->lambdaIdx[sigmaIdx];
+				//lambdaIdx = cell->sigma->lambdaIdx[sigmaIdx];
 
 				/* Average using these Pi's to calculate the cut itself (update alpha and beta) */
-				cut->alpha = cell->sigma->vals[sigmaIdx].pib + cell->delta->vals[lambdaIdx][obs].pib;
+				
+                cut->alpha = cell->sigma->vals[sigmaIdx].pib;
 
 				for (c = 1; c <= num->cntCcols; c++)
 					cut->beta[coord->CCols[c]] += cell->sigma->vals[sigmaIdx].piC[c];
-				for (c = 1; c <= num->rvCOmCnt; c++)
-					cut->beta[coord->rvCols[c]] += cell->delta->vals[lambdaIdx][obs].piC[c];
+                if (num->rvRowCnt > 0){
+                    cut->alpha += cell->delta->vals[lambdaIdx][obs].pib;
+                    for (c = 1; c <= num->rvCOmCnt; c++)
+                        cut->beta[coord->rvCols[c]] += cell->delta->vals[lambdaIdx][obs].piC[c];
+                }
 
 				addCut2Pool(cell, cut, num->prevCols, 0.0, TRUE);
 			}
@@ -519,15 +528,19 @@ int updtFeasCutPool(numType *num, coordType *coord, cellType *cell) {
 				cut = newCut(num->prevCols, 0, 1);
 
 				sigmaIdx = cell->basis->vals[idx]->sigmaIdx[0];
-				lambdaIdx = cell->sigma->lambdaIdx[sigmaIdx];
+			//	lambdaIdx = cell->sigma->lambdaIdx[sigmaIdx];
 
 				/* Average using these Pi's to calculate the cut itself (update alpha and beta) */
-				cut->alpha = cell->sigma->vals[sigmaIdx].pib + cell->delta->vals[lambdaIdx][obs].pib;
+				cut->alpha = cell->sigma->vals[sigmaIdx].pib;
 
 				for (c = 1; c <= num->cntCcols; c++)
 					cut->beta[coord->CCols[c]] += cell->sigma->vals[sigmaIdx].piC[c];
-				for (c = 1; c <= num->rvCOmCnt; c++)
-					cut->beta[coord->rvCols[c]] += cell->delta->vals[lambdaIdx][obs].piC[c];
+                
+                if (num->rvRowCnt > 0){
+                    cut->alpha += cell->delta->vals[lambdaIdx][obs].pib;
+                    for (c = 1; c <= num->rvCOmCnt; c++)
+                        cut->beta[coord->rvCols[c]] += cell->delta->vals[lambdaIdx][obs].piC[c];
+                }
 
 				addCut2Pool(cell, cut, num->prevCols, 0.0, TRUE);
 			}

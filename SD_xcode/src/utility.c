@@ -203,6 +203,12 @@ void calcMeanVariance(vector x, int lenX, double *mean, double *variance) {
 double vXv(vector a, vector b, intvec idxCol, int len) {
 	double ans = 0.0;
 	int n;
+    
+//    if(idxCol != NULL)
+//        for (n = 1; n <= len; n++ ){
+//            printf("a[n]=%4.6lf\n", a[n]);
+//            //printf("b[idxCol[n]]=%f \n", b[idxCol[n]]);
+//        }
 
 	if(idxCol == NULL)
 		for ( n = 1; n <= len; n++ )

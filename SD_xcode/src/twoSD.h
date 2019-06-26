@@ -105,6 +105,7 @@ typedef struct {
 
 	vector      incumbX;			/* incumbent master solution */
 	double      incumbEst;			/* estimate at incumbent solution */
+    int         RepeatedTime;        /*The number of time that incumbX and candidX are the same*/
 	double 		quadScalar; 		/* the proximal parameter/quadratic scalar 'sigma' */
 	BOOL        incumbChg;			/* set to be true if the incumbent solution has changed in an iteration */
 	int         iCutIdx;			/* index of incumbent cut in cell->cuts structure */

@@ -2,10 +2,10 @@
 TOLERANCE    0.001
 
 // Minimum iterations
-MIN_ITER 1
+MIN_ITER 200
 
 // Maximum number of iterations
-MAX_ITER   10
+MAX_ITER   300
 
 // Master type: 0 for LP, 1 for MILP, 5 for QP and 7 for MIQP
 MASTER_TYPE 1

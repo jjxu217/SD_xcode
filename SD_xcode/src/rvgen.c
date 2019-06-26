@@ -61,6 +61,14 @@ void generateOmega(stocType *stoc, vector observ, double minVal, long long *seed
 		else
 			errMsg("rvgen", "generateOmega", "unknown section type in omegastuff", 0);
 	}
+    
+#ifdef STOCH_CHECK
+    printf("Random Variables realization: \n");
+    for ( n = 0; n < stoc->numOmega; n++ )
+        printf("%4.6lf, ", observ[n]);
+    printf("\n");
+#endif
+    
 
 }//END generateOmega()
 

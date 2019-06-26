@@ -13,6 +13,27 @@
 
 extern configType config;
 
+BOOL optimal(probType **prob, cellType *cell) {
+    int i;
+    BOOL sameIndicator = TRUE;
+    if (cell->k > config.MIN_ITER){
+        for (i = 0; i <= prob[0]->num->cols; i++){
+            if (DBL_ABS(cell->candidX[i] - cell->incumbX[i]) > config.TOLERANCE){
+                sameIndicator = FALSE;
+                break;
+            }
+        }
+        if (sameIndicator)
+            cell->RepeatedTime++;
+        else
+            cell->RepeatedTime = 0;
+        
+        if (cell->RepeatedTime > 0.2 * config.MIN_ITER)
+            return TRUE;
+    }
+    
+    return FALSE;
+}//optimal()
 /* This function determines whether or not the current incumbent solution is considered to be optimal. Optimality is guarenteed if the
  * following criteria are satisfied:
  * 		0. Minimum number of iterations have been completed.
@@ -20,26 +41,26 @@ extern configType config;
  * 		2. If dual solution set is stable, the pre-test checks for "convergence" of objective function estimate.
  * 		3. Full test is based on boot-strapping, and checks the gap between primal (upper) and dual (lower) values.
  * The pre-test is performed only after the dual solution set has stabilized, and the full test is performed only if the pre-test is successful. */
-BOOL optimal(probType **prob, cellType *cell) {
-
-	/* ensure that the minimum number of iterations have been completed */
-	if (cell->k > config.MIN_ITER && cell->dualStableFlag ) {
-		/* perform the pre-test */
-		if ( preTest(cell) ) {
-			if ((cell->optFlag = fullTest(prob, cell)) == TRUE) {
-				/* full test satisfied */
-				printf (">"); fflush(stdout);
-				return TRUE;
-			}
-			else {
-				printf(">"); fflush(stdout);
-			}
-
-		}
-	}
-
-	return FALSE;
-}//optimal()
+//BOOL optimal(probType **prob, cellType *cell) {
+//
+//    /* ensure that the minimum number of iterations have been completed */
+//    if (cell->k > config.MIN_ITER && cell->dualStableFlag ) {
+//        /* perform the pre-test */
+//        if ( preTest(cell) ) {
+//            if ((cell->optFlag = fullTest(prob, cell)) == TRUE) {
+//                /* full test satisfied */
+//                printf (">"); fflush(stdout);
+//                return TRUE;
+//            }
+//            else {
+//                printf(">"); fflush(stdout);
+//            }
+//
+//        }
+//    }
+//
+//    return FALSE;
+//}//optimal()
 
 
 /* Because checking optimality is an arduous task, we first do a pre-check to determine if the full test is worthwhile. This function
@@ -211,7 +232,7 @@ void reformCuts(basisType *basis, sigmaType *sigma, deltaType *delta, omegaType 
 
 				for ( idx = 0; idx <= basis->vals[istar]->phiLength; idx++ ) {
 					sigmaIdx = basis->vals[istar]->sigmaIdx[idx];
-					lambdaIdx = sigma->lambdaIdx[sigmaIdx];
+				//	lambdaIdx = sigma->lambdaIdx[sigmaIdx];
 					if ( idx == 0 )
 						multiplier = 1.0;
 					else

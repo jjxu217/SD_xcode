@@ -46,8 +46,9 @@ int setupAlgo(oneProblem *orig, stocType *stoc, timeType *tim, probType ***prob,
 	/* ensure that we have a linear programs at all stages.*/
 	t = 0;
 	while ( t < tim->numStages ) {
-		if ( (*prob)[t++]->sp->type  != PROB_LP )
+		if ( (*prob)[t]->sp->type  != PROB_LP )
 			printf("Note :: Stage-%d problem is a mixed-integer program.\n", t);
+        t++;
 	}
     //Jiajun TODO: Will solve first stage as a MIP problem.check newCell
 	/* create the cells which will be used in the algorithms */
@@ -123,7 +124,8 @@ cellType *newCell(stocType *stoc, probType **prob, vector xk) {
 	cell->gamma 			= 0.0;
 	cell->normDk_1 			= 0.0;
 	cell->normDk 			= 0.0;
-
+    cell->RepeatedTime = 0;
+    
 	/* lower bounding approximations held in cuts structure */
 	cell->maxCuts = config.CUT_MULT * prob[0]->num->cols + 3;
 	cell->cuts 	  = newCuts(cell->maxCuts);
@@ -139,10 +141,14 @@ cellType *newCell(stocType *stoc, probType **prob, vector xk) {
 		length = prob[1]->num->rvdOmCnt*config.MAX_ITER + config.MAX_ITER / config.TAU + 1;
 	else
 		length = config.MAX_ITER + config.MAX_ITER / config.TAU + 1;
-	cell->basis  = newBasisType(config.MAX_ITER, prob[1]->num->cols, prob[1]->num->rows, WORDLENGTH);
-	cell->lambda = newLambda(length, 0, prob[1]->num->rvRowCnt);
+    //Jiajun BUG:
+    cell->basis  = newBasisType(2*config.MAX_ITER, prob[1]->num->cols, prob[1]->num->rows, WORDLENGTH);
+    //Jiajun: if the RHS doesn't contain RV, we don't need lambda/delta 
+    if (prob[1]->num->rvRowCnt > 0){
+        cell->lambda = newLambda(length, 0, prob[1]->num->rvRowCnt);
+        cell->delta  = newDelta(length);
+    }
 	cell->sigma  = newSigma(length, prob[1]->num->cntCcols, 0);
-	cell->delta  = newDelta(length);
 	cell->omega  = newOmega(prob[1]->num->numRV, config.MAX_ITER);
 
 	cell->optFlag 			= FALSE;
@@ -234,6 +240,7 @@ int cleanCellType(cellType *cell, probType *prob, vector xk) {
 		cell->iCutUpdt  = 0;
 		cell->incumbChg = TRUE;
 	}
+    cell->RepeatedTime = 0;
 	cell->gamma 	= 0.0;
 	cell->normDk_1 	= 0.0;
 	cell->normDk 	= 0.0;
@@ -269,8 +276,11 @@ int cleanCellType(cellType *cell, probType *prob, vector xk) {
 
 	/* stochastic components */
 	if (cell->basis) freeBasisType(cell->basis, TRUE);
-	if (cell->delta) freeDeltaType(cell->delta, cell->lambda->cnt, cell->omega->cnt, TRUE);
-	if (cell->lambda) freeLambdaType(cell->lambda, TRUE);
+    //Jiajun Check
+    if(prob->num->rvRowCnt > 0){
+        if (cell->delta) freeDeltaType(cell->delta, cell->lambda->cnt, cell->omega->cnt, TRUE);
+        if (cell->lambda) freeLambdaType(cell->lambda, TRUE);
+    }
 	if (cell->sigma) freeSigmaType(cell->sigma, TRUE);
 	if (cell->omega) freeOmegaType(cell->omega, TRUE);
 
@@ -322,10 +332,14 @@ void freeCellType(cellType *cell) {
 		if (cell->cuts) freeCutsType(cell->cuts, FALSE);
 		if (cell->fcuts) freeCutsType(cell->fcuts, FALSE);
 		if (cell->fcutsPool) freeCutsType(cell->fcutsPool, FALSE);
-		if (cell->delta) freeDeltaType(cell->delta, cell->lambda->cnt, cell->omega->cnt, FALSE);
 		if (cell->omega) freeOmegaType(cell->omega, FALSE);
-		if (cell->lambda) freeLambdaType(cell->lambda, FALSE);
-		if (cell->sigma) freeSigmaType(cell->sigma, FALSE);
+        //if (cell->delta) freeDeltaType(cell->delta, cell->lambda->cnt, cell->omega->cnt, FALSE);
+        //if (cell->lambda) freeLambdaType(cell->lambda, FALSE);
+//#ifdef DEBUG
+//        printf("sigma val in freeCellType():");
+//        printVector(cell->sigma->vals[0].piC, 3, NULL);
+//#endif
+        if (cell->sigma) freeSigmaType(cell->sigma, FALSE);
 		if (cell->basis) freeBasisType(cell->basis, FALSE);
 		if (cell->pi_ratio) mem_free(cell->pi_ratio);
 		mem_free(cell);

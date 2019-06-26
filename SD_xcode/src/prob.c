@@ -64,7 +64,7 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 			prob[t]->sp->mac = prob[t]->sp->macsz = orig->mac - tim->col[t];
 			prob[t]->sp->rstorsz = orig->rstorsz - rOffset;
 			prob[t]->sp->cstorsz = orig->cstorsz - cOffset;
-            prob[t]->sp->type = PROB_LP; //second stage LP
+            prob[t]->sp->type = PROB_LP; //Jiajun, second stage LP
 		}
 		prob[t]->sp->numInt = 0;
 		prob[t]->sp->numBin = 0;
@@ -510,7 +510,7 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
 //    }
 
 	/* write the mean value problem */
-	status = writeProblem(orig->lp, "original.lp");
+	status = writeProblem(orig->lp, "original_mean_problem.lp");
 	if ( status ) {
 		errMsg("solver", "meanProblem", "failed to write the problem", 0);
 		return NULL;
@@ -535,7 +535,7 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
 	if ( !(xk = (vector) arr_alloc(orig->mac+1, double)) )
 		errMsg("allocation", "meanProblem", "sol", 0);
 
-    //Jiaju: get the objective function based on the mster type
+    //Jiaju: get the objective function based on the master type
 	/* print results */
     if (orig->type == PROB_LP || orig->type == PROB_QP){
         obj = getObjective(orig->lp, PROB_LP);
@@ -551,7 +551,7 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
     
 #ifdef DEBUG
     printf("optimal solutions for the mean problem: ");
-    for(n = 0;n < orig->mac; n++){
+    for(n = 0;n <= orig->mac; n++){
         printf("%f ", xk[n]);
     }
 #endif

@@ -36,9 +36,9 @@ int readFiles(string inputDir, string probName, oneProblem **orig, timeType **ti
 
 	printf("Successfully read all the files for problem: %s.\n\n", probName);
 
-#ifdef INPUT_CHECK
-	writeStocType((*stoc));
-#endif
+//#ifdef INPUT_CHECK
+//    writeStocType((*stoc));
+//#endif
 
 	return 0;
 }//END readFiles()
@@ -97,9 +97,9 @@ oneProblem *readCore(string inputDir, string probName) {
 		return NULL;
 	}
 
-#if defined(DEBUG)
-    writeProblem(lp, "core.lp");
-#endif
+//#if defined(DEBUG)
+//    writeProblem(lp, "core.lp");
+//#endif
     
 	/* Allocate memory to the elements of problem and assign default values*/
 	orig = (oneProblem *) mem_malloc(sizeof(oneProblem));
@@ -349,7 +349,7 @@ stocType *readStoc(string inputDir, string probName, oneProblem *orig, timeType 
 	string 	*rvRows = NULL, *rvCols = NULL, *fields = NULL;
 	char	probpath[2*BLOCKSIZE], line[BLOCKSIZE], fieldType;
 	FILE	*fptr;
-    int		maxOmegas = 2500, maxVals = 200, n, numFields, maxFields = 10, maxGroups = 100;//Omega: number of RVs; Vals: number of realization for each RVs,
+    int		maxOmegas = 7010, maxVals = 200, n, numFields, maxFields = 10, maxGroups = 100;//Jiajun Setup: Omega: number of RVs; Vals: number of realization for each RVs,
 
 	/* Locate the problem sto file */
 	sprintf(probpath, "%s%s/%s.sto", inputDir, probName, probName);
@@ -458,6 +458,10 @@ stocType *readStoc(string inputDir, string probName, oneProblem *orig, timeType 
 
 	stoc->numPerGroup = (intvec) mem_realloc(stoc->numPerGroup, stoc->numGroups*sizeof(int));
 	stoc->groupBeg 	  = (intvec) mem_realloc(stoc->groupBeg ,stoc->numGroups*sizeof(int));
+    // Jiajun realloc stoc->numVals
+    if (!(strcmp(stoc->type, "BLOCKS_DISCRETE"))){
+        stoc->numVals     = (intvec) mem_realloc(stoc->numVals ,stoc->numGroups*sizeof(int));
+    }
 
 	return stoc;
 }//END readStoc()

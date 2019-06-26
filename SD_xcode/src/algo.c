@@ -163,7 +163,7 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 
 		/******* 4. Solve subproblem with incumbent solution, and form an incumbent cut *******/
         if (config.MASTER_TYPE == PROB_QP || config.MASTER_TYPE == PROB_MILP){
-            if (((cell->k - cell->iCutUpdt) % config.TAU == 0 ) ) {
+            if ( (cell->k - cell->iCutUpdt) % config.TAU == 0  && cell->RepeatedTime == 0 ) {
                 if ( (cell->iCutIdx = formSDCut(prob, cell, cell->incumbX, omegaIdx, &newOmegaFlag, prob[0]->lb) ) < 0 ) {
                     errMsg("algorithm", "solveCell", "failed to create the incumbent cut", 0);
                     goto TERMINATE;
@@ -173,9 +173,17 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
         }
 
 		/******* 5. Check improvement in predicted values at candidate solution *******/
-        if ( !(cell->incumbChg) && cell->k > 1)
-            /* If the incumbent has not changed in the current iteration */
+//        if ( !(cell->incumbChg) && cell->k > 1)
+//            /* If the incumbent has not changed in the current iteration */
+//            checkImprovement(prob[0], cell, candidCut);
+        
+        if ( cell->RepeatedTime == 0  && cell->k > 1)
+        /* If the incumbent has not changed in the current iteration */
             checkImprovement(prob[0], cell, candidCut);
+        else{
+            cell->iCutIdx = candidCut;
+            cell->iCutUpdt = cell->k;
+        }
 
 		/******* 6. Solve the master problem to obtain the new candidate solution */
 		if (config.MASTER_TYPE == PROB_QP){

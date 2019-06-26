@@ -82,7 +82,9 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
 				omega, omegaIdx, (*newOmegaFlag), currentIter, TOLERANCE ,newBasisFlag, (*subFeasFlag));
 		(*newOmegaFlag) = FALSE;
 		(*argmaxTime) += ((double) (clock()-tic))/CLOCKS_PER_SEC;
-
+        
+//        printf("sigma val in solveSubprob():");
+//        printVector(sigma->vals[0].piC, prob->num->cntCcols, NULL);
 #ifdef STOCH_CHECK
         //delta_d is missed
 //        obj = sigma->vals[status].pib - vXv(sigma->vals[status].piC, Xvect, prob->coord->CCols, prob->num->cntCcols);
@@ -106,8 +108,6 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
  * R is b, and T is C
  \***********************************************************************/
 int computeRHS(LPptr lp, numType *num, coordType *coord, sparseVector *bBar, sparseMatrix *Cbar, vector X, vector obs) {
-	sparseMatrix Comega;
-	sparseVector bomega;
 	vector rhs;
 	int cnt, *indices;
 
@@ -116,22 +116,27 @@ int computeRHS(LPptr lp, numType *num, coordType *coord, sparseVector *bBar, spa
 	for ( cnt = 0; cnt < num->rows; cnt++ )
 		indices[cnt] = cnt;
 
-    //Jiajun update: no need if there is no randomness in the RHS
-//    bomega.cnt = num->rvbOmCnt;    bomega.col = coord->rvbOmRows; bomega.val = obs + coord->rvOffset[0];
-//
-//    Comega.cnt = num->rvCOmCnt; Comega.col = coord->rvCOmCols + num->rvbOmCnt;
-//    Comega.row = coord->rvCOmRows + num->rvbOmCnt; Comega.val = obs + coord->rvOffset[1];
-
-	/* Start with the values of b(omega) -- both fixed and varying */
+    //first consider the fixed term: bBar - Cbar * X
+	/* Start with the values of bBar*/
 	rhs = expandVector(bBar->val, bBar->col, bBar->cnt, num->rows);
-//    for (cnt = 1; cnt <= bomega.cnt; cnt++)
-//        rhs[bomega.col[cnt]] += bomega.val[cnt];
 
-	/* (cumulatively) subtract values of C(omega) x X -- both fixed and varying */
+	/* (cumulatively) subtract values of Cbar X X -- both fixed and varying */
 	rhs = MSparsexvSub(Cbar, X, rhs);
 	
-//    Jiajun: The following is no need, since there is Comega=0
-//    rhs = MSparsexvSub(&Comega, X, rhs);
+    //if RHS contain RVs, then rhs += bomega - Comega * X
+    if(num->rvRowCnt > 0){
+        sparseMatrix Comega;
+        sparseVector bomega;
+        
+        bomega.cnt = num->rvbOmCnt;    bomega.col = coord->rvbOmRows; bomega.val = obs + coord->rvOffset[0];
+        Comega.cnt = num->rvCOmCnt; Comega.col = coord->rvCOmCols + num->rvbOmCnt;
+        Comega.row = coord->rvCOmRows + num->rvbOmCnt; Comega.val = obs + coord->rvOffset[1];
+        
+        for (cnt = 1; cnt <= bomega.cnt; cnt++)
+            rhs[bomega.col[cnt]] += bomega.val[cnt];
+        
+        rhs = MSparsexvSub(&Comega, X, rhs);
+    }
 
 	/* change the right-hand side in the solver */
 	if ( changeRHS(lp, num->rows, indices, rhs + 1) ) {

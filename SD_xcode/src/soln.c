@@ -32,7 +32,7 @@ int checkImprovement(probType *prob, cellType *cell, int candidCut) {
 	printf("\nCandidate estimate = %lf, Incumbent estimate = %lf",candidEst, cell->incumbEst);
 #endif
 
-    //Jiajun check: should it be (candidEst - cell->incumbEst) > (config.R1 * cell->gamma), where cell->gamma = cell->candidEst - cell->incumbEst in last step?
+    
 	/* If we see considerable improvement, then change the incumbent */
 	if ((candidEst - cell->incumbEst) < (config.R1 * cell->gamma)) {
 		/* when we find an improvement, then we need to replace the incumbent x with candidate x */
@@ -42,7 +42,7 @@ int checkImprovement(probType *prob, cellType *cell, int candidCut) {
 		}
 		cell->iCutIdx = candidCut;
         //Jiajun BUG: 
-		cell->incumbChg = FALSE;
+		//cell->incumbChg = FALSE;
 		printf("+"); fflush(stdout);
 	}
 	else {
@@ -100,6 +100,25 @@ int replaceIncumbent(probType *prob, cellType *cell, double candidEst) {
 	/* update the candidate cut as the new incumbent cut */
 	cell->iCutUpdt = cell->k;
 	cell->incumbChg = TRUE;
+    
+    /*copy the best_pi and argmax from the incumb SD Cut to candid SD cut*/
+#ifdef JIAJUN_DEBUG
+    printf("incumbX_updated\n");
+    printf("cell->omega->cnt = %d\n, cell->argmax_best_incumb = \n", cell->omega->cnt)
+    printVector(cell->argmax_best_incumb, cell->omega->cnt, NULL)
+    printf("cell->argmax_best_candid = \n")
+    printVector(cell->argmax_best_candid, cell->omega->cnt, NULL)
+    
+    printf("cell->omega->cnt = %d\n, cell->pi_best_incumb = \n", cell->omega->cnt)
+    printIntvec(cell->pi_best_incumb, cell->omega->cnt, NULL)
+    printf("cell->pi_best_candid = \n")
+    printIntvec(cell->pi_best_candid, cell->omega->cnt, NULL)
+#endif
+    
+    copyVector(cell->argmax_best_candid, cell->argmax_best_incumb, cell->omega->cnt, TRUE);
+    copyIntvec(cell->pi_best_candid, cell->pi_best_incumb, cell->omega->cnt);
+    
+
 
 	/* keep the two norm of solution*/
 	cell->normDk_1 = cell->normDk;

@@ -124,7 +124,18 @@ cellType *newCell(stocType *stoc, probType **prob, vector xk) {
 	cell->gamma 			= 0.0;
 	cell->normDk_1 			= 0.0;
 	cell->normDk 			= 0.0;
+    
     cell->RepeatedTime = 0;
+    if ( !(cell->argmax_best_candid = (vector) arr_alloc(config.MAX_ITER, double)) )
+        errMsg("allocation", "newCell", "cell->argmax_best_candid", 0);
+    if ( !(cell->pi_best_candid  = (intvec) arr_alloc(config.MAX_ITER, int)) )
+        errMsg("allocation", "newCell", "cell->pi_best_candid", 0);
+    
+    if ( !(cell->argmax_best_incumb = (vector) arr_alloc(config.MAX_ITER, double)) )
+        errMsg("allocation", "newCell", "cell->argmax_best_incumb", 0);
+    if ( !(cell->pi_best_incumb  = (intvec) arr_alloc(config.MAX_ITER, int)) )
+        errMsg("allocation", "newCell", "cell->pi_best_incumb", 0);
+    
     
 	/* lower bounding approximations held in cuts structure */
 	cell->maxCuts = config.CUT_MULT * prob[0]->num->cols + 3;
@@ -273,6 +284,12 @@ int cleanCellType(cellType *cell, probType *prob, vector xk) {
 	cell->feasCnt 		= 0;
 	cell->infeasIncumb 	= FALSE;
 	cell->fUpdt[0] = cell->fUpdt[1] = 0;
+    
+    /*Jiajun, added on July 5th, 2019, cuts extra*/
+    if(cell->argmax_best_candid)mem_free(cell->argmax_best_candid);
+    if(cell->argmax_best_incumb)mem_free(cell->argmax_best_incumb);
+    if(cell->pi_best_candid)mem_free(cell->pi_best_candid);
+    if(cell->pi_best_incumb)mem_free(cell->pi_best_incumb);
 
 	/* stochastic components */
 	if (cell->basis) freeBasisType(cell->basis, TRUE);

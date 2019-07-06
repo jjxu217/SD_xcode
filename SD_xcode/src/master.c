@@ -158,10 +158,10 @@ int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb)
     
     //Jiajun TODO: apply x to constraints
     /* Get the dual solution too */
-//    if ( getDual(cell->master->lp, cell->piM, cell->master->mar) ) {
-//        errMsg("solver", "solveMILPMaster", "failed to obtain dual solutions to master", 0);
-//        return 1;
-//    }
+    if ( getDual(cell->master->lp, cell->piM, cell->master->mar) ) {
+        errMsg("solver", "solveMILPMaster", "failed to obtain dual solutions to master", 0);
+        return 1;
+    }
 //
 //    if ( getDualSlacks(cell->master->lp, cell->djM, num->cols) ) {
 //        errMsg("solver", "solveMILPMaster", "failed to obtain dual slacks for master", 0);

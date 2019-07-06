@@ -158,6 +158,16 @@ int getDual(LPptr lp, vector Pi, int length) {
 	return status;
 }//END getDual()
 
+int getDual4MIP(LPptr lp, vector Pi, int length) {
+    int    status;
+    
+    status = CPXgetpi(env, lp, Pi+1, 0, length-1);
+
+    Pi[0] = oneNorm(Pi+1, length);
+    
+    return 0;
+}//END getDual()
+
 int getDualSlacks(LPptr lp, vector Dj, int length){
 	int	status;
 

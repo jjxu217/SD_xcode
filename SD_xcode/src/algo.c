@@ -118,8 +118,9 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 //Jiajun: Solve 1st stage as MIP
 int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 	vector 	observ;
-	int		m, omegaIdx, candidCut;
+	int		m, omegaIdx, candidCut=0;
 	BOOL 	newOmegaFlag;
+    int     newBasisCnt=0;
 	clock_t	tic;
     FILE     *solFile = NULL;
 
@@ -156,15 +157,17 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 		omegaIdx = calcOmega(observ - 1, 0, prob[1]->num->numRV, cell->omega, &newOmegaFlag, config.TOLERANCE);
 
 		/******* 3. Solve the subproblem with candidate solution, form and update the candidate cut *******/
-		if ( (candidCut = formSDCut(prob, cell, cell->candidX, omegaIdx, &newOmegaFlag, prob[0]->lb)) < 0 ) {
-			errMsg("algorithm", "solveCell", "failed to add candidate cut", 0);
-			goto TERMINATE;
-		}
+        if (cell->RepeatedTime == 0){
+            if ( (candidCut = formSDCut(prob, cell, cell->candidX, omegaIdx, &newOmegaFlag, prob[0]->lb, cell->argmax_best_candid, cell->pi_best_candid, FALSE)) < 0 ) {
+                errMsg("algorithm", "solveCell", "failed to add candidate cut", 0);
+                goto TERMINATE;
+            }
+        }
 
 		/******* 4. Solve subproblem with incumbent solution, and form an incumbent cut *******/
         if (config.MASTER_TYPE == PROB_QP || config.MASTER_TYPE == PROB_MILP){
-            if ( (cell->k - cell->iCutUpdt) % config.TAU == 0  && cell->RepeatedTime == 0 ) {
-                if ( (cell->iCutIdx = formSDCut(prob, cell, cell->incumbX, omegaIdx, &newOmegaFlag, prob[0]->lb) ) < 0 ) {
+            if (((cell->k - cell->iCutUpdt) % config.TAU == 0 ) ) {
+                if ( (cell->iCutIdx = formSDCut(prob, cell, cell->incumbX, omegaIdx, &newOmegaFlag, prob[0]->lb, cell->argmax_best_incumb, cell->pi_best_incumb, TRUE) ) < 0 ) {
                     errMsg("algorithm", "solveCell", "failed to create the incumbent cut", 0);
                     goto TERMINATE;
                 }
@@ -173,17 +176,9 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
         }
 
 		/******* 5. Check improvement in predicted values at candidate solution *******/
-//        if ( !(cell->incumbChg) && cell->k > 1)
-//            /* If the incumbent has not changed in the current iteration */
-//            checkImprovement(prob[0], cell, candidCut);
-        
-        if ( cell->RepeatedTime == 0  && cell->k > 1)
-        /* If the incumbent has not changed in the current iteration */
+        if ( cell->RepeatedTime == 0 && cell->k > 1)
+            /* If the candidX != incumbX, check improvement for candidX */
             checkImprovement(prob[0], cell, candidCut);
-        else{
-            cell->iCutIdx = candidCut;
-            cell->iCutUpdt = cell->k;
-        }
 
 		/******* 6. Solve the master problem to obtain the new candidate solution */
 		if (config.MASTER_TYPE == PROB_QP){

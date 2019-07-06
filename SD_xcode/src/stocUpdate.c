@@ -53,6 +53,7 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 			}
 		}
 	}
+    (*newBasisFlag) = TRUE;
 
 	if ( B->feasFlag ) {
 		/* New basis encountered, fill the remainder of basis elements. */
@@ -152,7 +153,7 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
  * containing two indices.  (While both indices point to pieces of the dual vectors, sigma and delta may not be in sync with one
  * another due to elimination of non-distinct or redundant vectors. */
 int computeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, vector piCbarX, vector Xvect, vector observ,
-		int obs, int numSamples, BOOL pi_eval, double *argmax, BOOL isNew) {
+		int obs, int numSamples, BOOL pi_eval, double *argmax, BOOL isNew, vector argmax_best, intvec pi_best, BOOL IncumbIndicator) {
 	double 	arg, multiplier = 1.0;
 	int 	cnt, maxCnt, c, basisUp, basisLow, sigmaIdx, lambdaIdx;
 
@@ -167,47 +168,94 @@ int computeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *si
 		basisUp = INT_MAX; basisLow = numSamples;
 	}
 
-	*argmax = -DBL_MAX; maxCnt = 0;
+	
 
-	/* Run through the list of basis to choose the one which provides the best lower bound */
-	for ( cnt = 0; cnt < basis->cnt; cnt++ ) {
-		if ( basis->vals[cnt]->feasFlag && basis->vals[cnt]->ck > basisLow && basis->vals[cnt]->ck <= basisUp ) {
-			if ( basis->obsFeasible[cnt][obs] ) {
-				arg = 0.0;
-				for ( c = 0; c <= basis->vals[cnt]->phiLength; c++ ) {
-                    /*if RHS contain RVs, then bomega/Comega is not zero*/
-                    if (num->rvRowCnt > 0){
-                        sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
-                        lambdaIdx = sigma->lambdaIdx[sigmaIdx];
-                        if ( c == 0 )
-                            multiplier = 1.0;
-                        else
-                            multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
-                        /* Start with (Pi x bBar) + (Pi x bomega) - (Pi x Cbar) x X */
-                        arg += multiplier*(sigma->vals[sigmaIdx].pib + delta->vals[lambdaIdx][obs].pib - piCbarX[sigmaIdx]);
-                        arg -= multiplier*vXv(delta->vals[lambdaIdx][obs].piC, Xvect, coord->rvCOmCols, num->rvCOmCnt);
+  //If this is to generate the cut at incumbent solution, then we only over-write the old cut with the new cut at the incumbent with an additional sampled point.  we compare the best pi from last iteration and the new pi
+    if (IncumbIndicator){
+        *argmax = argmax_best[obs]; maxCnt = pi_best[obs];
+        
+        cnt = basis->cnt - 1;
+        if ( cnt != maxCnt && basis->vals[cnt]->feasFlag && basis->obsFeasible[cnt][obs] ) {
+            arg = 0.0;
+            for ( c = 0; c <= basis->vals[cnt]->phiLength; c++ ) {
+                /*if RHS contain RVs, then bomega/Comega is not zero*/
+                if (num->rvRowCnt > 0){
+                    sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                    lambdaIdx = sigma->lambdaIdx[sigmaIdx];
+                    if ( c == 0 )
+                        multiplier = 1.0;
+                    else
+                        multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                    /* Start with (Pi x bBar) + (Pi x bomega) - (Pi x Cbar) x X */
+                    arg += multiplier*(sigma->vals[sigmaIdx].pib + delta->vals[lambdaIdx][obs].pib - piCbarX[sigmaIdx]);
+                    arg -= multiplier*vXv(delta->vals[lambdaIdx][obs].piC, Xvect, coord->rvCOmCols, num->rvCOmCnt);
+                }
+                /*otherwise, the randomness only in the cost coeff. delta/lambda structures are empty*/
+                else{
+                    sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                    if ( c == 0 )
+                        multiplier = 1.0;
+                    else
+                        multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                    /* Start with (Pi x bBar)  - (Pi x Cbar) x X */
+                    arg += multiplier*(sigma->vals[sigmaIdx].pib  - piCbarX[sigmaIdx]);
+                }
+            }
+            if (arg > (*argmax)) {
+                *argmax = arg;
+                maxCnt = cnt;
+            }
+        }
+    }
+    //generate candidate SD cut
+    else{
+        *argmax = -DBL_MAX; maxCnt = 0;
+        for ( cnt = 0; cnt < basis->cnt; cnt++ ) {
+            if ( basis->vals[cnt]->feasFlag && basis->vals[cnt]->ck > basisLow && basis->vals[cnt]->ck <= basisUp ) {
+                if ( basis->obsFeasible[cnt][obs] ) {
+                    arg = 0.0;
+                    for ( c = 0; c <= basis->vals[cnt]->phiLength; c++ ) {
+                        /*if RHS contain RVs, then bomega/Comega is not zero*/
+                        if (num->rvRowCnt > 0){
+                            sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                            lambdaIdx = sigma->lambdaIdx[sigmaIdx];
+                            if ( c == 0 )
+                                multiplier = 1.0;
+                            else
+                                multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                            /* Start with (Pi x bBar) + (Pi x bomega) - (Pi x Cbar) x X */
+                            arg += multiplier*(sigma->vals[sigmaIdx].pib + delta->vals[lambdaIdx][obs].pib - piCbarX[sigmaIdx]);
+                            arg -= multiplier*vXv(delta->vals[lambdaIdx][obs].piC, Xvect, coord->rvCOmCols, num->rvCOmCnt);
+                        }
+                        /*otherwise, the randomness only in the cost coeff. delta/lambda structures are empty*/
+                        else{
+                            sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                            if ( c == 0 )
+                                multiplier = 1.0;
+                            else
+                                multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                            
+                            /* Start with (Pi x bBar)  - (Pi x Cbar) x X */
+                            arg += multiplier*(sigma->vals[sigmaIdx].pib  - piCbarX[sigmaIdx]);
+                
+                        }
                     }
-                    /*otherwise, the randomness only in the cost coeff. delta/lambda structures are empty*/
-                    else{
-                        sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
-                        if ( c == 0 )
-                            multiplier = 1.0;
-                        else
-                            multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
-                        
-                        /* Start with (Pi x bBar)  - (Pi x Cbar) x X */
-                        arg += multiplier*(sigma->vals[sigmaIdx].pib  - piCbarX[sigmaIdx]);
-            
-                    }
-				}
 
-				if (arg > (*argmax)) {
-					*argmax = arg;
-					maxCnt = cnt;
-				}
-			}
-		}
-	}
+                    if (arg > (*argmax)) {
+                        *argmax = arg;
+                        maxCnt = cnt;
+                    }
+                }
+            }
+        }
+    }
+    pi_best[obs] = maxCnt;
+    argmax_best[obs] = *argmax;
+
+#ifdef DEBUG
+    printf("numSamples = %d, basis->cnt=%d\n", numSamples, basis->cnt);
+    printf("RepeatTime=%d, pi_best[%d]=%d, argmax_best[%d]=%f \n", RepeatedTime, obs, pi_best[obs], argmax_best[obs]);
+#endif
 
     if ( *argmax == -DBL_MAX  )
 		return -1;
@@ -471,7 +519,6 @@ sigmaType *newSigma(int numIter, int numNzCols, int numPi) {
 		errMsg("allocation", "newSigma", "sigma",0);
     if (!(sigma->lambdaIdx = (intvec) arr_alloc(numIter, int)))
         errMsg("allocation", "newSigma", "sigma->lambIdx",0);
-//    sigma->lambdaIdx = NULL;
 	if (!(sigma->ck = (intvec) arr_alloc(numIter, int)))
 		errMsg("allocation", "newSigma", "sigma->ck",0);
 	if (!(sigma->vals = arr_alloc(numIter, pixbCType)))
@@ -561,22 +608,13 @@ void freeSigmaType(sigmaType *sigma, BOOL partial) {
 	int n;
 
 	if (sigma) {
-        for ( n = 0; n < sigma->cnt; n++ ){
-            if (sigma->vals[n].piC){
-#ifdef DEBUG
-//                printf("sigma val[%d] in freeCellType():", n);
-//                printVector(sigma->vals[n].piC, 3, NULL);
-#endif
-                mem_free(sigma->vals[n].piC);
-            }
-        }
+		for ( n = 0; n < sigma->cnt; n++ )
+			if (sigma->vals[n].piC) mem_free(sigma->vals[n].piC);
 		if ( partial ) {
 			sigma->cnt = 0;
 			return;
 		}
-        if (sigma->lambdaIdx) {
-            printf("sigma->lambdaIdx addressOX%p\n", sigma->lambdaIdx);
-            mem_free(sigma->lambdaIdx);}
+		if (sigma->lambdaIdx) mem_free(sigma->lambdaIdx);
 		if (sigma->vals) mem_free(sigma->vals);
 		if (sigma->ck) mem_free(sigma->ck);
 		mem_free(sigma);

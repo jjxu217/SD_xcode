@@ -105,7 +105,13 @@ typedef struct {
 
 	vector      incumbX;			/* incumbent master solution */
 	double      incumbEst;			/* estimate at incumbent solution */
+    
     int         RepeatedTime;        /*The number of time that incumbX and candidX are the same*/
+    intvec      pi_best_candid;            /*pi_best[obs] record the index of the best basis maximize the dual problem for observation obs*/
+    vector      argmax_best_candid;        /*argmax_best[obs] record the objective value for pi_best[obs] basis*/
+    intvec      pi_best_incumb;            /*pi_best[obs] record the index of the best basis maximize the dual problem for observation obs*/
+    vector      argmax_best_incumb;        /*argmax_best[obs] record the objective value for pi_best[obs] basis*/
+    
 	double 		quadScalar; 		/* the proximal parameter/quadratic scalar 'sigma' */
 	BOOL        incumbChg;			/* set to be true if the incumbent solution has changed in an iteration */
 	int         iCutIdx;			/* index of incumbent cut in cell->cuts structure */
@@ -191,9 +197,9 @@ int changeMILPbds(LPptr lp, int numCols, vector bdl, vector bdu, vector xk, int 
 oneProblem *newMaster(oneProblem *orig, double lb);
 
 /* cuts.c */
-int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb);
+int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb, vector argmax_best, intvec pi_best, BOOL IncumbIndicator);
 oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, omegaType *omega, vector Xvect, int numSamples,
-		BOOL *dualStableFlag, vector pi_ratio, double lb);
+		BOOL *dualStableFlag, vector pi_ratio, double lb, vector argmax_best, intvec pi_best, BOOL IncumbIndicator);
 oneCut *newCut(int numX, int numIstar, int numSamples);
 cutsType *newCuts(int maxCuts);
 int reduceCuts(cellType *cell, vector candidX, vector pi, int betaLen, double lb);

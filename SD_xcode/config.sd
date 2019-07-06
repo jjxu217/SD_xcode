@@ -2,10 +2,10 @@
 TOLERANCE    0.001
 
 // Minimum iterations
-MIN_ITER 200
+MIN_ITER 500
 
 // Maximum number of iterations
-MAX_ITER   300
+MAX_ITER   1000
 
 // Master type: 0 for LP, 1 for MILP, 5 for QP and 7 for MIQP
 MASTER_TYPE 1
@@ -14,7 +14,7 @@ MASTER_TYPE 1
 CUT_MULT  1
 
 // Number of iterations after which incumbent cut is reevaluated.
-TAU 2
+TAU 1
 
 // The Minimum value of the cell->quad_scalar.
 MIN_QUAD_SCALAR 10
@@ -55,7 +55,7 @@ RUN_SEED    3735836402047426
 EVAL_FLAG 1
 
 // Solution tolerance for deciding the usage of mean solution.
-EVAL_MIN_ITER 250
+EVAL_MIN_ITER 1000
 
 // Obj. eval. is accurate to within this much, w/95% confidence
 EVAL_ERROR 0.01

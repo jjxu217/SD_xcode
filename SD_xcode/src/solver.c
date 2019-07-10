@@ -20,17 +20,17 @@ int solveProblem(LPptr lp, string pname, int type, int *status) {
 	solveagain:
 	switch  ( type ) {
 	case PROB_LP:
-		setIntParam(PARAM_PREIND, OFF);
+		//setIntParam(PARAM_PREIND, OFF);
 		(*status) = CPXlpopt(env, lp);
-		setIntParam(PARAM_PREIND, ON);
+		//setIntParam(PARAM_PREIND, ON);
 		break;
 	case PROB_QP:
 		(*status) = CPXqpopt(env, lp);
 		break;
 	case PROB_MILP:
-        setIntParam(PARAM_PREIND, OFF);
+       // setIntParam(PARAM_PREIND, OFF);
 		(*status) = CPXmipopt(env, lp);
-        setIntParam(PARAM_PREIND, ON);
+      //  setIntParam(PARAM_PREIND, ON);
 		break;
 	case PROB_MIQP:
 		(*status) = CPXmipopt(env, lp);
@@ -212,12 +212,11 @@ void openSolver(){
 		goto TERMINATE;
 	}
 
+    status = setIntParam(PARAM_SCRIND, OFF);
 #ifdef DEBUG
     //status = CPXsetintparam (env, CPXPARAM_ScreenOutput, CPX_ON);
     //status = CPXsetintparam(env, PARAM_SCRIND, ON);
     status = setIntParam(PARAM_SCRIND, ON);
-#else
-    status = setIntParam(PARAM_SCRIND, OFF);
 #endif
 
     if ( status ) {
@@ -837,3 +836,27 @@ int freeProblem(LPptr lp) {
 
 	return status;
 }//END freeProb()
+
+int Newcols(LPptr lp, int nzcnt, vector obj, vector lb,
+            vector ub, string xctype, string* colname){
+    int status;
+    status = CPXnewcols (env, lp, nzcnt, obj, lb, ub, xctype, colname);
+    if ( status )
+        solverErrmsg(status);
+    return status;
+}
+
+int Addrows(LPptr lp, int ccnt, int rcnt, int nzcnt, vector rhs, string sense, intvec rmatbeg, intvec rmatind, vector rmatval,
+            string* colname, string* rowname){
+    int status;
+    status = CPXaddrows (env, lp, ccnt, rcnt, nzcnt, rhs,
+                                  sense, rmatbeg, rmatind, rmatval,
+                                  colname, rowname);
+    
+    if ( status )
+        solverErrmsg(status);
+    return status;
+}
+
+
+

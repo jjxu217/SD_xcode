@@ -185,6 +185,8 @@ int readConfig() {
 			fscanf(fptr, "%d", &config.BOOTSTRAP_REP);
 		else if (!(strcmp(line, "MULTIPLE_REP")))
 			fscanf(fptr, "%d", &config.MULTIPLE_REP);
+        else if (!(strcmp(line, "OP_ratio")))
+            fscanf(fptr, "%lf", &config.OP_ratio);
 		else if (!strcmp(line, "//"))
 			fgets(comment, 2*BLOCKSIZE, fptr);
 		else {

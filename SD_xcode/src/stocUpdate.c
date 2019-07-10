@@ -12,7 +12,7 @@
 #include "stoc.h"
 
 int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *lambda, sigmaType *sigma, deltaType *delta, int deltaRowLength,
-		omegaType *omega, int omegaIdx, BOOL newOmegaFlag, int currentIter, double TOLERANCE, BOOL *newBasisFlag, BOOL subFeasFlag) {
+		omegaType *omega, int omegaIdx, BOOL newOmegaFlag, int currentIter, double TOLERANCE, int *newBasisPos, BOOL subFeasFlag) {
 	oneBasis *B;
 	sparseVector dOmega;
 	int 	cnt, lambdaIdx=-1;
@@ -45,7 +45,8 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 				/* The basis is the same as one encountered before */
 				freeOneBasis(B);
 				basis->vals[cnt]->weight++;
-				(*newBasisFlag) = FALSE;
+				//(*newBasisFlag) = FALSE;
+                (*newBasisPos) = cnt;
 #if defined (STOCH_CHECK)
 				printf("An old basis encountered :: %d\n", cnt);
 #endif
@@ -53,7 +54,7 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 			}
 		}
 	}
-    (*newBasisFlag) = TRUE;
+    //(*newBasisFlag) = TRUE;
 
 	if ( B->feasFlag ) {
 		/* New basis encountered, fill the remainder of basis elements. */
@@ -73,7 +74,7 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 		/* Record the dual and reduced cost on bounds. */
 		if ( getDual(lp, B->piDet, prob->num->rows) ) {
 			errMsg("algorithm", "stochasticUpdates", "failed to get the dual", 0);
-			return 1;
+			return -1;
 		}
 	}
 
@@ -112,7 +113,8 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 					/* The basis was encountered before */
 					freeOneBasis(B);
 					basis->vals[cnt]->weight++;
-					(*newBasisFlag) = FALSE;
+					//(*newBasisFlag) = FALSE;
+                    *newBasisPos = cnt;
 					return cnt;
 				}
 			}
@@ -141,6 +143,7 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
 //    printVector(sigma->vals[0].piC, prob->num->cntCcols, NULL);
     
     printf("basis->cnt = %d", basis->cnt);
+    *newBasisPos = basis->cnt;
 	return basis->cnt++;
 
 }//End stochasticUpdates()
@@ -153,7 +156,7 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
  * containing two indices.  (While both indices point to pieces of the dual vectors, sigma and delta may not be in sync with one
  * another due to elimination of non-distinct or redundant vectors. */
 int computeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, vector piCbarX, vector Xvect, vector observ,
-		int obs, int numSamples, BOOL pi_eval, double *argmax, BOOL isNew, vector argmax_best, intvec pi_best, BOOL IncumbIndicator) {
+		int obs, int numSamples, BOOL pi_eval, double *argmax, BOOL isNew, vector argmax_best, intvec pi_best) {
 	double 	arg, multiplier = 1.0;
 	int 	cnt, maxCnt, c, basisUp, basisLow, sigmaIdx, lambdaIdx;
 
@@ -169,13 +172,10 @@ int computeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *si
 	}
 
 	
-
-  //If this is to generate the cut at incumbent solution, then we only over-write the old cut with the new cut at the incumbent with an additional sampled point.  we compare the best pi from last iteration and the new pi
-    if (IncumbIndicator){
-        *argmax = argmax_best[obs]; maxCnt = pi_best[obs];
-        
-        cnt = basis->cnt - 1;
-        if ( cnt != maxCnt && basis->vals[cnt]->feasFlag && basis->obsFeasible[cnt][obs] ) {
+    //generate candidate SD cut
+    *argmax = -DBL_MAX; maxCnt = 0;
+    for ( cnt = 0; cnt < basis->cnt; cnt++ ) {
+        if ( basis->vals[cnt]->feasFlag && basis->vals[cnt]->ck > basisLow && basis->vals[cnt]->ck <= basisUp && basis->obsFeasible[cnt][obs]) {
             arg = 0.0;
             for ( c = 0; c <= basis->vals[cnt]->phiLength; c++ ) {
                 /*if RHS contain RVs, then bomega/Comega is not zero*/
@@ -197,70 +197,142 @@ int computeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *si
                         multiplier = 1.0;
                     else
                         multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                    
                     /* Start with (Pi x bBar)  - (Pi x Cbar) x X */
                     arg += multiplier*(sigma->vals[sigmaIdx].pib  - piCbarX[sigmaIdx]);
+                    }
                 }
-            }
+
             if (arg > (*argmax)) {
                 *argmax = arg;
                 maxCnt = cnt;
             }
         }
     }
-    //generate candidate SD cut
-    else{
-        *argmax = -DBL_MAX; maxCnt = 0;
-        for ( cnt = 0; cnt < basis->cnt; cnt++ ) {
-            if ( basis->vals[cnt]->feasFlag && basis->vals[cnt]->ck > basisLow && basis->vals[cnt]->ck <= basisUp ) {
-                if ( basis->obsFeasible[cnt][obs] ) {
-                    arg = 0.0;
-                    for ( c = 0; c <= basis->vals[cnt]->phiLength; c++ ) {
-                        /*if RHS contain RVs, then bomega/Comega is not zero*/
-                        if (num->rvRowCnt > 0){
-                            sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
-                            lambdaIdx = sigma->lambdaIdx[sigmaIdx];
-                            if ( c == 0 )
-                                multiplier = 1.0;
-                            else
-                                multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
-                            /* Start with (Pi x bBar) + (Pi x bomega) - (Pi x Cbar) x X */
-                            arg += multiplier*(sigma->vals[sigmaIdx].pib + delta->vals[lambdaIdx][obs].pib - piCbarX[sigmaIdx]);
-                            arg -= multiplier*vXv(delta->vals[lambdaIdx][obs].piC, Xvect, coord->rvCOmCols, num->rvCOmCnt);
-                        }
-                        /*otherwise, the randomness only in the cost coeff. delta/lambda structures are empty*/
-                        else{
-                            sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
-                            if ( c == 0 )
-                                multiplier = 1.0;
-                            else
-                                multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
-                            
-                            /* Start with (Pi x bBar)  - (Pi x Cbar) x X */
-                            arg += multiplier*(sigma->vals[sigmaIdx].pib  - piCbarX[sigmaIdx]);
-                
-                        }
-                    }
-
-                    if (arg > (*argmax)) {
-                        *argmax = arg;
-                        maxCnt = cnt;
-                    }
-                }
-            }
-        }
-    }
+    
     pi_best[obs] = maxCnt;
     argmax_best[obs] = *argmax;
 
 #ifdef DEBUG
     printf("numSamples = %d, basis->cnt=%d\n", numSamples, basis->cnt);
-    printf("RepeatTime=%d, pi_best[%d]=%d, argmax_best[%d]=%f \n", RepeatedTime, obs, pi_best[obs], argmax_best[obs]);
+    printf("obs=%d, pi_best=%d, argmax_best=%f \n",  obs, pi_best[obs], argmax_best[obs]);
 #endif
 
     if ( *argmax == -DBL_MAX  )
 		return -1;
 	else
 		return maxCnt;
+}//END computeIstar
+
+/*This function loops through all the dual vectors found so far and returns the index of the one which satisfies the expression:
+ *                 argmax { Pi x (b - C x X) | all Pi }
+ * where X, b, and C are given.  It is calculated in this form:
+ *                 Pi x bBar + Pi x bomega - (Pi x Cbar) x X - (Pi x Comega) x X.
+ * Since the Pi's are stored in two different structures (sigma and delta), the index to the maximizing Pi is actually a structure
+ * containing two indices.  (While both indices point to pieces of the dual vectors, sigma and delta may not be in sync with one
+ * another due to elimination of non-distinct or redundant vectors. */
+int quickcomputeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, vector piCbarX, vector Xvect, vector observ,
+                 int obs, int numSamples, BOOL pi_eval, double *argmax, BOOL isNew, vector argmax_best, intvec pi_best, BOOL isNewOmega, int *newBasisPos) {
+    double     arg, multiplier = 1.0;
+    int     cnt, maxCnt, c, basisUp, basisLow, sigmaIdx, lambdaIdx, i;
+    
+    if (pi_eval == TRUE)
+        numSamples -= (int) (0.1*numSamples + 1);
+    
+    /* Establish the range of iterations over which the istar calculations are conducted. Only bases discovered in this iteration range are used. */
+    if ( !isNew ) {
+        basisUp = numSamples; basisLow = -INT_MAX;
+    }
+    else {
+        basisUp = INT_MAX; basisLow = numSamples;
+    }
+    
+    
+    //generate incumbent SD cut,
+    //if we try to find the best pi for the newOmega, then the the best pi is newBasisPos[1], which is the solution for the subproblem
+    if (isNewOmega){
+        cnt = newBasisPos[1];
+        arg = 0.0;
+        for ( c = 0; c <= basis->vals[cnt]->phiLength; c++ ) {
+            /*if RHS contain RVs, then bomega/Comega is not zero*/
+            if (num->rvRowCnt > 0){
+                sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                lambdaIdx = sigma->lambdaIdx[sigmaIdx];
+                if ( c == 0 )
+                    multiplier = 1.0;
+                else
+                    multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                /* Start with (Pi x bBar) + (Pi x bomega) - (Pi x Cbar) x X */
+                arg += multiplier*(sigma->vals[sigmaIdx].pib + delta->vals[lambdaIdx][obs].pib - piCbarX[sigmaIdx]);
+                arg -= multiplier*vXv(delta->vals[lambdaIdx][obs].piC, Xvect, coord->rvCOmCols, num->rvCOmCnt);
+            }
+            /*otherwise, the randomness only in the cost coeff. delta/lambda structures are empty*/
+            else{
+                sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                if ( c == 0 )
+                    multiplier = 1.0;
+                else
+                    multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                /* Start with (Pi x bBar)  - (Pi x Cbar) x X */
+                arg += multiplier*(sigma->vals[sigmaIdx].pib  - piCbarX[sigmaIdx]);
+            }
+        }
+        maxCnt = newBasisPos[1];
+        *argmax = arg;
+    }
+    /*if we try to find the best pi for the oldOmega, then we compare the best one in last iteration with two new added basis*/
+    else{
+        *argmax = argmax_best[obs]; maxCnt = pi_best[obs];
+        
+        for(i = 0; i < 2; i++){
+            cnt = newBasisPos[i];
+            if ( cnt != maxCnt && cnt != -1 && basis->vals[cnt]->feasFlag && basis->obsFeasible[cnt][obs] ) {
+                arg = 0.0;
+                for ( c = 0; c <= basis->vals[cnt]->phiLength; c++ ) {
+                    /*if RHS contain RVs, then bomega/Comega is not zero*/
+                    if (num->rvRowCnt > 0){
+                        sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                        lambdaIdx = sigma->lambdaIdx[sigmaIdx];
+                        if ( c == 0 )
+                            multiplier = 1.0;
+                        else
+                            multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                        /* Start with (Pi x bBar) + (Pi x bomega) - (Pi x Cbar) x X */
+                        arg += multiplier*(sigma->vals[sigmaIdx].pib + delta->vals[lambdaIdx][obs].pib - piCbarX[sigmaIdx]);
+                        arg -= multiplier*vXv(delta->vals[lambdaIdx][obs].piC, Xvect, coord->rvCOmCols, num->rvCOmCnt);
+                    }
+                    /*otherwise, the randomness only in the cost coeff. delta/lambda structures are empty*/
+                    else{
+                        sigmaIdx = basis->vals[cnt]->sigmaIdx[c];
+                        if ( c == 0 )
+                            multiplier = 1.0;
+                        else
+                            multiplier = observ[coord->rvOffset[2] + basis->vals[cnt]->omegaIdx[c]];
+                        /* Start with (Pi x bBar)  - (Pi x Cbar) x X */
+                        arg += multiplier*(sigma->vals[sigmaIdx].pib  - piCbarX[sigmaIdx]);
+                    }
+                }
+                if (arg > (*argmax)) {
+                    *argmax = arg;
+                    maxCnt = cnt;
+                }
+            }
+        }
+    }
+
+    
+    pi_best[obs] = maxCnt;
+    argmax_best[obs] = *argmax;
+    
+#ifdef DEBUG
+    printf("numSamples = %d, basis->cnt=%d\n", numSamples, basis->cnt);
+    printf("obs=%d, pi_best=%d, argmax_best=%f \n",  obs, pi_best[obs], argmax_best[obs]);
+#endif
+    
+    if ( *argmax == -DBL_MAX  )
+        return -1;
+    else
+        return maxCnt;
 }//END computeIstar
 
 /* This function calculates a new column in the delta structure, based on a new observation of omega. Thus, lambda_pi X C and lambda_pi X b
@@ -411,8 +483,7 @@ int calcSigma(numType *num, coordType *coord, sparseVector *bBar, sparseMatrix *
         sigma->lambdaIdx[sigma->cnt] = idxLambda;}
     
 #ifdef DEBUG
-    printf("sigma->cnt: = %d\n", sigma->cnt);
-    printVector(sigma->vals[0].piC, num->cntCcols, NULL);
+    printf("sigma->cnt: = %d\n, sigma->vals[sigma->cnt].piC=\n ", sigma->cnt);
     printVector(sigma->vals[sigma->cnt].piC, num->cntCcols, NULL);
 #endif
 	return sigma->cnt++;
@@ -440,7 +511,7 @@ int calcOmega(vector observ, int begin, int end, omegaType *omega, BOOL *newOmeg
 	(*newOmegaFlag) = TRUE;
 
 #ifdef STOCH_CHECK
-	printf("Observation (%d): ", *newOmegaFlag);
+	printf("Observation minus mean (%d): ", *newOmegaFlag);
 	printVector(omega->vals[omega->cnt], end - begin, NULL);
 #endif
 

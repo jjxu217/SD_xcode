@@ -306,6 +306,7 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 			errMsg("solver", "newProb", "failed to write stage problem", 0);
 			return prob;
 		}
+        printf("stage %d: prob[t]->sp->macsz=%d, prob[t]->sp->marsz=%d, prob[t]->sp->matsz=%d", t, prob[t]->sp->macsz, prob[t]->sp->marsz, prob[t]->sp->matsz);
 	}
 #endif
 
@@ -468,6 +469,10 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 		errMsg("solver", "newSubprob", "subprob",0);
 		return NULL;
 	}
+    if ( writeProblem(prob[t]->sp->lp, "end_of_newProb.lp") ) {
+        errMsg("solver", "newProb", "failed to write stage problem", 0);
+        return prob;
+    }
 #endif
 
 	return prob;
@@ -551,9 +556,7 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
     
 #ifdef DEBUG
     printf("optimal solutions for the mean problem: ");
-    for(n = 0;n <= orig->mac; n++){
-        printf("%f ", xk[n]);
-    }
+    printVector(xk, orig->mac, NULL);
 #endif
 
 	return xk;

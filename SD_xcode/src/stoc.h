@@ -98,7 +98,7 @@ typedef struct {
 
 /* subprob.c */
 int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType *basis, lambdaType *lambda, sigmaType *sigma, deltaType *delta, int deltaRowLength,
-		omegaType *omega, int omegaIdx, BOOL *newOmegaFlag, int currentIter, double TOLERANCE, BOOL *subFeasFlag, BOOL *newBasisFlag,
+		omegaType *omega, int omegaIdx, BOOL *newOmegaFlag, int currentIter, double TOLERANCE, BOOL *subFeasFlag, int *newBasisPos,
 		double *subprobTime, double *argmaxTime);
 int computeRHS(LPptr lp, numType *num, coordType *coord, sparseVector *bBar, sparseMatrix *Cbar, vector X, vector obs);
 int computeCostCoeff(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, vector observ);
@@ -109,9 +109,11 @@ oneProblem *newSubprob(oneProblem *sp);
 
 /* stocUpdate.c */
 int stochasticUpdates(probType *prob, LPptr spLP, basisType *basis, lambdaType *lambda, sigmaType *sigma, deltaType *delta, int deltaRowLength,
-		omegaType *omega, int omegaIdx, BOOL newOmegaFlag, int currentIter, double TOLERANCE, BOOL *newBasisFlag, BOOL subFeasFlag);
+		omegaType *omega, int omegaIdx, BOOL newOmegaFlag, int currentIter, double TOLERANCE, int *newBasisPos, BOOL subFeasFlag);
 int computeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, vector piCbarX, vector Xvect, vector observ,
-		int obs, int numSamples, BOOL pi_eval, double *argmax, BOOL isNew, vector argmax_best, intvec pi_best, BOOL IncumbIndicator);
+		int obs, int numSamples, BOOL pi_eval, double *argmax, BOOL isNew, vector argmax_best, intvec pi_best);
+int quickcomputeIstar(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, vector piCbarX, vector Xvect, vector observ,
+                      int obs, int numSamples, BOOL pi_eval, double *argmax, BOOL isNew, vector argmax_best, intvec pi_best, BOOL isNewOmega, int *newBasisPos);
 int calcDelta(numType *num, coordType *coord, lambdaType *lambda, deltaType *delta, int deltaRowLength, omegaType *omega, BOOL newOmegaFlag, int elemIdx);
 int calcLambda(numType *num, coordType *coord, vector Pi, lambdaType *lambda, BOOL *newLambdaFlag, double TOLERANCE);
 int calcSigma(numType *num, coordType *coord, sparseVector *bBar, sparseMatrix *CBar, vector pi, double mubBar,

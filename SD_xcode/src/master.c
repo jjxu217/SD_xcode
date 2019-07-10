@@ -136,10 +136,12 @@ int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb)
     }
     
     /* add the incumbent back to change from \Delta X to X */
+    /*Jiajun Question: d2 is L2 norm, do we need to change to L1 norm, although the values are the same*/
     for (i = 1; i <= num->cols; i++)
         d2 += cell->candidX[i] * cell->candidX[i];
     addVectors(cell->candidX, cell->incumbX, NULL, num->cols);
     
+#ifdef DEBUG
     printf("candidX: \n");
     for (i = 1; i <= num->cols; i++)
         printf("%f ", cell->candidX[i]);
@@ -149,6 +151,7 @@ int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb)
     for (i = 1; i <= num->cols; i++)
         printf("%f ", cell->incumbX[i]);
     printf("\n");
+#endif
     //Jiajun check: what's the fuction of this
     /* update d_norm_k in soln_type. */
     if (cell->k == 1)
@@ -158,10 +161,10 @@ int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb)
     
     //Jiajun TODO: apply x to constraints
     /* Get the dual solution too */
-    if ( getDual(cell->master->lp, cell->piM, cell->master->mar) ) {
-        errMsg("solver", "solveMILPMaster", "failed to obtain dual solutions to master", 0);
-        return 1;
-    }
+//    if ( getDual(cell->master->lp, cell->piM, cell->master->mar) ) {
+//        errMsg("solver", "solveMILPMaster", "failed to obtain dual solutions to master", 0);
+//        return 1;
+//    }
 //
 //    if ( getDualSlacks(cell->master->lp, cell->djM, num->cols) ) {
 //        errMsg("solver", "solveMILPMaster", "failed to obtain dual slacks for master", 0);
@@ -201,6 +204,7 @@ int addCut2Master(oneProblem *master, oneCut *cut, vector vectX, int lenX) {
         /* Set up indices */
         if (!(indices = (intvec) arr_alloc(2 * lenX + 1, int)))
             errMsg("Allocation", "addcut2Master", "fail to allocate memory to coefficients of beta",0);
+        /*setup the indices and beta for d_plus and d_minus in the new cut*/
         for (cnt = 1; cnt <= lenX; cnt++){
             indices[cnt] = cnt - 1;
             indices[lenX + cnt] = lenX + cnt;
@@ -208,7 +212,7 @@ int addCut2Master(oneProblem *master, oneCut *cut, vector vectX, int lenX) {
             new_beta[lenX + cnt] = -cut->beta[cnt];
         }
         indices[0] = lenX;
-        new_beta[0] = cut->beta[0];
+        new_beta[0] = cut->beta[0]; //cut->beta[0]=1.0, => cost coeff of eta
         
         if ( addRow(master->lp, 2 * lenX + 1, cut->alphaIncumb, GE, 0, indices, new_beta, cut->name) ) {
             errMsg("solver", "addcut2Master", "failed to add new row to problem in solver", 0);
@@ -291,9 +295,9 @@ int constructMILP(probType *prob, cellType *cell, vector incumbX, double L1Scala
         errMsg("algorithm", "algoIntSD", "failed to change the bounds to convert the problem into MILP", 0);
         return 1;
     }
-    
+#ifdef DEBUG
     writeProblem(cell->master->lp, "After_changeMILPbds.lp");
-    
+#endif
     return 0;
 }//END constructMILP()
 
@@ -390,7 +394,7 @@ int changeMILPwithL1(LPptr lp, oneProblem *sp, int numCols){
 //        errMsg("solver", "changeMILPwithL1", "failed to get the objective cost coeffs in the solver", 0);
 //        return 1;
 //    }
-    
+    /*construct d_minus*/
     for(n = 0; n < numCols; n++){
         lb[n] = 0;
         ub[n] = 1;
@@ -411,6 +415,10 @@ int changeMILPwithL1(LPptr lp, oneProblem *sp, int numCols){
 
     
     changeCtype(lp, numCols, indices, ctype);
+    
+#ifdef DEBUG
+    writeProblem(lp, "changeMILPwithL1.lp");
+#endif
     
     mem_free(new_objx);
     mem_free(lb);

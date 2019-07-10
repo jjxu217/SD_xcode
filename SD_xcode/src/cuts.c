@@ -19,14 +19,14 @@ int updtFeasCutPool(numType *num, coordType *coord, cellType *cell);
 int checkFeasCutPool(cellType *cell, int lenX);
 int addCut2Pool(cellType *cell, oneCut *cut, int lenX, double lb, BOOL feasCut);
 
-int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb, vector argmax_best, intvec pi_best, BOOL IncumbIndicator) {
+int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb, vector argmax_best, intvec pi_best, int *newBasisPos) {
 	oneCut 	*cut;
 	int    	cutIdx;
-	BOOL	newBasisFlag=FALSE;
+	//BOOL	newBasisFlag=FALSE;
 
 	/* (a) Construct the subproblem with input observation and master solution, solve the subproblem, and complete stochastic updates */
 	if ( solveSubprob(prob[1], cell->subprob, Xvect, cell->basis, cell->lambda, cell->sigma, cell->delta, config.MAX_ITER,
-			cell->omega, omegaIdx, newOmegaFlag, cell->k, config.TOLERANCE, &cell->spFeasFlag, &newBasisFlag,
+			cell->omega, omegaIdx, newOmegaFlag, cell->k, config.TOLERANCE, &cell->spFeasFlag, newBasisPos,
 			&cell->time.subprobIter, &cell->time.argmaxIter) ){
 		errMsg("algorithm", "formSDCut", "failed to solve the subproblem", 0);
 		return -1;
@@ -53,7 +53,7 @@ int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL 
 
 	/* (b) create an affine lower bound */
 	clock_t tic = clock();
-	cut = SDCut(prob[1]->num, prob[1]->coord, cell->basis, cell->sigma, cell->delta, cell->omega, Xvect, cell->k, &cell->dualStableFlag, cell->pi_ratio, cell->lb, argmax_best, pi_best, IncumbIndicator);
+	cut = SDCut(prob[1]->num, prob[1]->coord, cell->basis, cell->sigma, cell->delta, cell->omega, Xvect, cell->k, &cell->dualStableFlag, cell->pi_ratio, cell->lb, argmax_best, pi_best);
 	if ( cut == NULL ) {
 		errMsg("algorithm", "formSDCut", "failed to create the affine minorant", 0);
 		return -1;
@@ -89,7 +89,7 @@ int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL 
 
 //IncumbIndicator == 0 represents cadidate cut, IncumbIndicator == 1 represents incumbent cut
 oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, omegaType *omega, vector Xvect, int numSamples,
-		BOOL *dualStableFlag, vector pi_ratio, double lb, vector argmax_best, intvec pi_best, BOOL IncumbIndicator) {
+		BOOL *dualStableFlag, vector pi_ratio, double lb, vector argmax_best, intvec pi_best) {
 	oneCut *cut;
 	vector 	piCbarX, beta;
 	double  argmaxOld, argmaxNew, cummOld = 0.0, cummAll = 0.0, argmax, alpha = 0.0, variance = 1.0, multiplier;
@@ -125,16 +125,16 @@ oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma
 		/* For each observation, find the Pi which maximizes height at X. */
 		if (pi_eval_flag == TRUE ) {
 			istarOld = computeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
-					obs, numSamples, pi_eval_flag, &argmaxOld, FALSE,argmax_best, pi_best, IncumbIndicator);
+					obs, numSamples, pi_eval_flag, &argmaxOld, FALSE,argmax_best, pi_best);
 			istarNew = computeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
-					obs, numSamples, TRUE, &argmaxNew, TRUE, argmax_best, pi_best, IncumbIndicator);
+					obs, numSamples, TRUE, &argmaxNew, TRUE, argmax_best, pi_best);
 
 			argmax = max(argmaxOld, argmaxNew);
 			istar  = (argmaxNew > argmaxOld) ? istarNew : istarOld;
             argmax_best[obs] = argmax;
             pi_best[obs] = istar;
 #ifdef DEBUG
-            printf("SDCut: RepeatTime=%d, pi_best[%d]=%d, argmax_best[%d]=%f \n", RepeatedTime, obs, pi_best[obs], argmax_best[obs]);
+            printf("SDCut:  obs=%d, pi_best=%d, argmax_best=%f \n",obs, pi_best[obs], argmax_best[obs]);
 #endif
 
 
@@ -144,7 +144,7 @@ oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma
 		else {
 			/* identify the maximal Pi for each observation */
 			istar = computeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
-					obs, numSamples, pi_eval_flag, &argmax, FALSE, argmax_best, pi_best, IncumbIndicator);
+					obs, numSamples, pi_eval_flag, &argmax, FALSE, argmax_best, pi_best);
 		}
 
 		if (istar < 0) {
@@ -216,14 +216,14 @@ oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma
 	return cut;
 }//END SDCut
 
-int formIncumbSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb, vector argmax_best, intvec pi_best, int Ne) {
+int formIncumbSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb, vector argmax_best, intvec pi_best, int* newBasisPos) {
     oneCut     *cut;
     int        cutIdx;
     BOOL    newBasisFlag=FALSE;
     
     /* (a) Construct the subproblem with input observation and master solution, solve the subproblem, and complete stochastic updates */
     if ( solveSubprob(prob[1], cell->subprob, Xvect, cell->basis, cell->lambda, cell->sigma, cell->delta, config.MAX_ITER,
-                      cell->omega, omegaIdx, newOmegaFlag, cell->k, config.TOLERANCE, &cell->spFeasFlag, &newBasisFlag,
+                      cell->omega, omegaIdx, newOmegaFlag, cell->k, config.TOLERANCE, &cell->spFeasFlag, &newBasisPos[1],
                       &cell->time.subprobIter, &cell->time.argmaxIter) ){
         errMsg("algorithm", "formSDCut", "failed to solve the subproblem", 0);
         return -1;
@@ -250,7 +250,7 @@ int formIncumbSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx,
     
     /* (b) create an affine lower bound */
     clock_t tic = clock();
-    cut = SDCut(prob[1]->num, prob[1]->coord, cell->basis, cell->sigma, cell->delta, cell->omega, Xvect, cell->k, &cell->dualStableFlag, cell->pi_ratio, cell->lb, argmax_best, pi_best, IncumbIndicator);
+    cut = IncumbSDCut(prob[1]->num, prob[1]->coord, cell->basis, cell->sigma, cell->delta, cell->omega, Xvect, cell->k, &cell->dualStableFlag, cell->pi_ratio, cell->lb, argmax_best, pi_best, omegaIdx, newBasisPos);
     if ( cut == NULL ) {
         errMsg("algorithm", "formSDCut", "failed to create the affine minorant", 0);
         return -1;
@@ -272,20 +272,26 @@ int formIncumbSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx,
     //#endif
     
     /* (c) add cut to the structure and master problem  */
-    if ( (cutIdx = addCut2Pool(cell, cut, prob[0]->num->cols, lb, FALSE)) < 0) {
-        errMsg("algorithm", "formSDCut", "failed to add the new cut to cutsType structure", 0);
+    //drop the previous icumbent cut
+    if ( dropCut(cell, cell->iCutIdx) ){
+        errMsg("algorithm", "reduceCuts", "failed to drop a cut", 0);
         return -1;
     }
+
+    //add the new incumbent SD Cut into Pool
+    cell->cuts->cnt++;
+    cell->cuts->vals[cell->iCutIdx] = cut;
+    
     if ( addCut2Master(cell->master, cut, cell->incumbX, prob[0]->num->cols) ) {
         errMsg("algorithm", "formSDCut", "failed to add the new cut to master problem", 0);
         return -1;
     }
     
-    return cutIdx;
+    return cell->iCutIdx;
 }//END formCut()
 
 oneCut *IncumbSDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, omegaType *omega, vector Xvect, int numSamples,
-              BOOL *dualStableFlag, vector pi_ratio, double lb, vector argmax_best, intvec pi_best, BOOL IncumbIndicator) {
+              BOOL *dualStableFlag, vector pi_ratio, double lb, vector argmax_best, intvec pi_best, int omegaIdx, int *newBasisPos) {
     oneCut *cut;
     vector     piCbarX, beta;
     double  argmaxOld, argmaxNew, cummOld = 0.0, cummAll = 0.0, argmax, alpha = 0.0, variance = 1.0, multiplier;
@@ -319,29 +325,33 @@ oneCut *IncumbSDCut(numType *num, coordType *coord, basisType *basis, sigmaType 
     /* Test for omega issues */
     for (obs = 0; obs < omega->cnt; obs++) {
         /* For each observation, find the Pi which maximizes height at X. */
-        if (pi_eval_flag == TRUE ) {
-            istarOld = computeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
-                                    obs, numSamples, pi_eval_flag, &argmaxOld, FALSE,argmax_best, pi_best, IncumbIndicator);
-            istarNew = computeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
-                                    obs, numSamples, TRUE, &argmaxNew, TRUE, argmax_best, pi_best, IncumbIndicator);
-            
-            argmax = max(argmaxOld, argmaxNew);
-            istar  = (argmaxNew > argmaxOld) ? istarNew : istarOld;
-            argmax_best[obs] = argmax;
-            pi_best[obs] = istar;
-#ifdef DEBUG
-            printf("SDCut: RepeatTime=%d, pi_best[%d]=%d, argmax_best[%d]=%f \n", RepeatedTime, obs, pi_best[obs], argmax_best[obs]);
-#endif
-            
-            
-            cummOld += max(argmaxOld-lb, 0)*omega->weights[obs];
-            cummAll += max(argmax-lb, 0)*omega->weights[obs];
-        }
-        else {
+ //       if (pi_eval_flag == TRUE ) {
+//            istarOld = computeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
+//                                    obs, numSamples, pi_eval_flag, &argmaxOld, FALSE,argmax_best, pi_best, IncumbIndicator);
+//            istarNew = computeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
+//                                    obs, numSamples, TRUE, &argmaxNew, TRUE, argmax_best, pi_best, IncumbIndicator);
+//
+//            argmax = max(argmaxOld, argmaxNew);
+//            istar  = (argmaxNew > argmaxOld) ? istarNew : istarOld;
+//            argmax_best[obs] = argmax;
+//            pi_best[obs] = istar;
+//#ifdef DEBUG
+//            printf("SDCut: RepeatTime=%d, pi_best[%d]=%d, argmax_best[%d]=%f \n", RepeatedTime, obs, pi_best[obs], argmax_best[obs]);
+//#endif
+//
+//
+//            cummOld += max(argmaxOld-lb, 0)*omega->weights[obs];
+//            cummAll += max(argmax-lb, 0)*omega->weights[obs];
+        
+ //       else {
             /* identify the maximal Pi for each observation */
-            istar = computeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
-                                 obs, numSamples, pi_eval_flag, &argmax, FALSE, argmax_best, pi_best, IncumbIndicator);
-        }
+        if (obs != omegaIdx)
+            istar = quickcomputeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
+                             obs, numSamples, pi_eval_flag, &argmax, FALSE, argmax_best, pi_best, FALSE, newBasisPos);
+        else
+            istar = quickcomputeIstar(num, coord, basis, sigma, delta, piCbarX, Xvect, omega->vals[obs],
+                                      obs, numSamples, pi_eval_flag, &argmax, FALSE, argmax_best, pi_best, TRUE, newBasisPos);
+     
         
         if (istar < 0) {
             errMsg("algorithm", "SDCut", "failed to identify maximal Pi for an observation", 0);
@@ -387,19 +397,19 @@ oneCut *IncumbSDCut(numType *num, coordType *coord, basisType *basis, sigmaType 
         }
     }
     
-    if (pi_eval_flag == TRUE) {
-        pi_ratio[numSamples % config.SCAN_LEN] = cummOld / cummAll;
-        if (numSamples - config.PI_EVAL_START > config.SCAN_LEN)
-            variance = calcVariance(pi_ratio, NULL, NULL, 0);
-        else
-            variance = 1.0;
-        
-        if (DBL_ABS(variance) >= .000002 || pi_ratio[numSamples % config.SCAN_LEN] < 0.95 )
-            *dualStableFlag = FALSE;
-        else
-            *dualStableFlag = TRUE;
-    }
-    
+//    if (pi_eval_flag == TRUE) {
+//        pi_ratio[numSamples % config.SCAN_LEN] = cummOld / cummAll;
+//        if (numSamples - config.PI_EVAL_START > config.SCAN_LEN)
+//            variance = calcVariance(pi_ratio, NULL, NULL, 0);
+//        else
+//            variance = 1.0;
+//
+//        if (DBL_ABS(variance) >= .000002 || pi_ratio[numSamples % config.SCAN_LEN] < 0.95 )
+//            *dualStableFlag = FALSE;
+//        else
+//            *dualStableFlag = TRUE;
+//    }
+//
     cut->alpha = alpha / numSamples;
     
     for (c = 1; c <= num->prevCols; c++)

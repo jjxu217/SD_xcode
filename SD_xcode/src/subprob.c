@@ -15,7 +15,7 @@
  * observation of omega, and some X vector of primal variables from the master problem.  Generally, the latest observation is used.  When
  * forming a normal cut, the candidate x should be used, while the incumbent x should be used for updating the incumbent cut. */
 int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType *basis, lambdaType *lambda, sigmaType *sigma, deltaType *delta, int deltaRowLength,
-		omegaType *omega, int omegaIdx, BOOL *newOmegaFlag, int currentIter, double TOLERANCE, BOOL *subFeasFlag, BOOL *newBasisFlag,
+		omegaType *omega, int omegaIdx, BOOL *newOmegaFlag, int currentIter, double TOLERANCE, BOOL *subFeasFlag, int *newBasisPos,
 		double *subprobTime, double *argmaxTime) {
 	int  	status;
 	clock_t tic;
@@ -41,7 +41,7 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
 
 	/* (c) Solve the subproblem to obtain the optimal dual solution. */
 	tic = clock();
-	setIntParam(PARAM_PREIND, OFF);
+	//setIntParam(PARAM_PREIND, OFF);
     changeLPSolverType(ALG_NET);  //Jiajun: sub-problem type
 	if ( solveProblem(subproblem->lp, subproblem->name, subproblem->type, &status) ) {
 		if ( status == STAT_INFEASIBLE ) {
@@ -56,7 +56,7 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
 			return 1;
 		}
 	}
-	setIntParam(PARAM_PREIND, ON);
+	//setIntParam(PARAM_PREIND, ON);
 	(*subprobTime) += ((double) (clock() - tic))/CLOCKS_PER_SEC;
 
 #ifdef STOCH_CHECK
@@ -75,13 +75,13 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
     printf(")\n");
 #endif
 
-	if ( newBasisFlag!= NULL ) {
-		tic = clock();
-		/* (d) update the stochastic elements in the problem */
-		status = stochasticUpdates(prob, subproblem->lp, basis, lambda, sigma, delta, deltaRowLength,
-				omega, omegaIdx, (*newOmegaFlag), currentIter, TOLERANCE ,newBasisFlag, (*subFeasFlag));
-		(*newOmegaFlag) = FALSE;
-		(*argmaxTime) += ((double) (clock()-tic))/CLOCKS_PER_SEC;
+	//if ( newBasisFlag!= NULL ) {
+    tic = clock();
+    /* (d) update the stochastic elements in the problem */
+    status = stochasticUpdates(prob, subproblem->lp, basis, lambda, sigma, delta, deltaRowLength,
+            omega, omegaIdx, (*newOmegaFlag), currentIter, TOLERANCE ,newBasisPos, (*subFeasFlag));
+   // (*newOmegaFlag) = FALSE;
+    (*argmaxTime) += ((double) (clock()-tic))/CLOCKS_PER_SEC;
         
 //        printf("sigma val in solveSubprob():");
 //        printVector(sigma->vals[0].piC, prob->num->cntCcols, NULL);
@@ -92,7 +92,7 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
 //                omega->vals[omegaIdx], prob->coord->rvCOmCols, prob->num->rvCOmCnt);
 //        printf("Objective function estimate    = %lf\n", obj);
 #endif
-	}
+	//}
 
 	return 0;
 }// END solveSubprob()

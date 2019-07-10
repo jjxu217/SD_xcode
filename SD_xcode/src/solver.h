@@ -123,4 +123,8 @@ int getBasisInvARow(LPptr lp, int i, vector phi);
 int getBasisInvACol(LPptr lp, int i, vector phi);
 int freeProblem(LPptr lp);
 
+int Newcols(LPptr lp, int nzcnt, vector obj, vector lb, vector ub, string xctype, string* colname);
+int Addrows(LPptr lp, int ccnt, int rcnt, int nzcnt, vector rhs, string sense, intvec rmatbeg, intvec rmatind, vector rmatval,
+            string* colname, string* rowname);
+
 #endif /* MTSD_SOLVER_H_ */

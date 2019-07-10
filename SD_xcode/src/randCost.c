@@ -116,9 +116,12 @@ void calcBasis(LPptr lp, numType *num, coordType *coord, sparseVector *dBar, one
 	temp = (vector) arr_alloc(num->rows+1, double);
 	printIntvec(basisHead, num->rows, bFile);
 	printVector(basicCost, num->rows, bFile);
+    printIntvec(basisHead, num->rows, NULL);
+    printVector(basicCost, num->rows, NULL);
 	for ( i = 0; i < num->rows; i++ ) {
 		getBasisInvRow(lp, i, temp+1);
 		printVector(temp, num->rows, bFile);
+        printVector(temp, num->rows, NULL);
 	}
 	mem_free(temp); fclose(bFile);
 #endif

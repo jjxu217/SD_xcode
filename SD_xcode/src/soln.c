@@ -104,18 +104,18 @@ int replaceIncumbent(probType *prob, cellType *cell, double candidEst) {
     /*copy the best_pi and argmax from the incumb SD Cut to candid SD cut*/
 #ifdef JIAJUN_DEBUG
     printf("incumbX_updated\n");
-    printf("cell->omega->cnt = %d\n, cell->argmax_best_incumb = \n", cell->omega->cnt)
-    printVector(cell->argmax_best_incumb, cell->omega->cnt, NULL)
-    printf("cell->argmax_best_candid = \n")
-    printVector(cell->argmax_best_candid, cell->omega->cnt, NULL)
+    printf("cell->omega->cnt = %d,\n cell->argmax_best_incumb = \n", cell->omega->cnt);
+    printVector(cell->argmax_best_incumb, cell->omega->cnt, NULL);
+    printf("cell->argmax_best_candid = \n");
+    printVector(cell->argmax_best_candid, cell->omega->cnt, NULL);
     
-    printf("cell->omega->cnt = %d\n, cell->pi_best_incumb = \n", cell->omega->cnt)
-    printIntvec(cell->pi_best_incumb, cell->omega->cnt, NULL)
-    printf("cell->pi_best_candid = \n")
-    printIntvec(cell->pi_best_candid, cell->omega->cnt, NULL)
+    printf("cell->omega->cnt = %d,\n cell->pi_best_incumb = \n", cell->omega->cnt);
+    printIntvec(cell->pi_best_incumb, cell->omega->cnt, NULL);
+    printf("cell->pi_best_candid = \n");
+    printIntvec(cell->pi_best_candid, cell->omega->cnt, NULL);
 #endif
     
-    copyVector(cell->argmax_best_candid, cell->argmax_best_incumb, cell->omega->cnt, TRUE);
+    copyVector(cell->argmax_best_candid, cell->argmax_best_incumb, cell->omega->cnt-1, TRUE);
     copyIntvec(cell->pi_best_candid, cell->pi_best_incumb, cell->omega->cnt);
     
 

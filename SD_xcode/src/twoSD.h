@@ -57,6 +57,7 @@ typedef struct{
 	double  PRE_EPSILON;		/* gap used for preliminary optimality test */
 
 	int 	MULTIPLE_REP;		/* When multiple replications are needed, set this to (M), else (0) */
+    double  OP_ratio;
 }configType;
 
 typedef struct {
@@ -197,9 +198,14 @@ int changeMILPbds(LPptr lp, int numCols, vector bdl, vector bdu, vector xk, int 
 oneProblem *newMaster(oneProblem *orig, double lb);
 
 /* cuts.c */
-int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb, vector argmax_best, intvec pi_best, BOOL IncumbIndicator);
+int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb, vector argmax_best, intvec pi_best, int *newBasisPos);
 oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, omegaType *omega, vector Xvect, int numSamples,
-		BOOL *dualStableFlag, vector pi_ratio, double lb, vector argmax_best, intvec pi_best, BOOL IncumbIndicator);
+		BOOL *dualStableFlag, vector pi_ratio, double lb, vector argmax_best, intvec pi_best);
+
+int formIncumbSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb, vector argmax_best, intvec pi_best, int* newBasisPos);
+oneCut *IncumbSDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma, deltaType *delta, omegaType *omega, vector Xvect, int numSamples,
+                    BOOL *dualStableFlag, vector pi_ratio, double lb, vector argmax_best, intvec pi_best, int omegaIdx, int *newBasisPos);
+
 oneCut *newCut(int numX, int numIstar, int numSamples);
 cutsType *newCuts(int maxCuts);
 int reduceCuts(cellType *cell, vector candidX, vector pi, int betaLen, double lb);
@@ -230,6 +236,7 @@ void resampleOmega(intvec cdf, intvec observ, int numSamples);
 /* compromise.c */
 int buildCompromise(probType *prob, cellType *cell, batchSummary *batch);
 int solveCompromise(probType *prob, batchSummary *batch);
+int addL1Norm (probType *prob, batchSummary *batch);
 int addBatchEquality (probType *prob, batchSummary *batch);
 batchSummary *newBatchSummary(probType *prob, int numBatch);
 void freeBatchType(batchSummary *batch);

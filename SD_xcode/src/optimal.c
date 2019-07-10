@@ -16,21 +16,21 @@ extern configType config;
 BOOL optimal(probType **prob, cellType *cell) {
     int i;
     BOOL sameIndicator = TRUE;
-    if (cell->k > config.MIN_ITER){
-        for (i = 0; i <= prob[0]->num->cols; i++){
-            if (DBL_ABS(cell->candidX[i] - cell->incumbX[i]) > config.TOLERANCE){
-                sameIndicator = FALSE;
-                break;
-            }
+    
+    for (i = 0; i <= prob[0]->num->cols; i++){
+        if (DBL_ABS(cell->candidX[i] - cell->incumbX[i]) > config.TOLERANCE){
+            sameIndicator = FALSE;
+            break;
         }
-        if (sameIndicator)
-            cell->RepeatedTime++;
-        else
-            cell->RepeatedTime = 0;
-        
-        if (cell->RepeatedTime > 0.2 * config.MIN_ITER)
-            return TRUE;
     }
+    if (sameIndicator)
+        cell->RepeatedTime++;
+    else
+        cell->RepeatedTime = 0;
+    
+    if (cell->k > config.MIN_ITER && cell->RepeatedTime > config.OP_ratio * config.MIN_ITER)
+        return TRUE;
+    
     
     return FALSE;
 }//optimal()

@@ -125,7 +125,7 @@ cellType *newCell(stocType *stoc, probType **prob, vector xk) {
 	cell->normDk_1 			= 0.0;
 	cell->normDk 			= 0.0;
     
-    cell->RepeatedTime = 0;
+    cell->RepeatedTime = 1;
     if ( !(cell->argmax_best_candid = (vector) arr_alloc(config.MAX_ITER, double)) )
         errMsg("allocation", "newCell", "cell->argmax_best_candid", 0);
     if ( !(cell->pi_best_candid  = (intvec) arr_alloc(config.MAX_ITER, int)) )

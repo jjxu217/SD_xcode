@@ -280,6 +280,7 @@
 		7ECD27B92238B49600F11974 /* libcplexdistmip.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcplexdistmip.a; path = "../../../../../Applications/CPLEX_Studio128/cplex/lib/x86-64_osx/static_pic/libcplexdistmip.a"; sourceTree = "<group>"; };
 		7ECD27BA2238B49600F11974 /* libcplex.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcplex.a; path = "../../../../../Applications/CPLEX_Studio128/cplex/lib/x86-64_osx/static_pic/libcplex.a"; sourceTree = "<group>"; };
 		7ECD27C722397EC200F11974 /* config.sd */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.sd; sourceTree = "<group>"; };
+		7EED7BC022D15092004E0798 /* temp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = temp.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1030,6 +1031,7 @@
 				7ECD27732238B32B00F11974 /* prob.h */,
 				7ECD27752238B32B00F11974 /* optimal.c */,
 				7ECD27762238B32B00F11974 /* stoc.h */,
+				7EED7BC022D15092004E0798 /* temp.c */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -1268,6 +1270,7 @@
 					"BASIS_CHECK=1",
 					"INPUT_CHECK=1",
 					"JIAJUN_DEBUG=1",
+					"BATCH_CHECK=1",
 				);
 				HEADER_SEARCH_PATHS = (
 					/Applications/CPLEX_Studio128/cplex/include,
@@ -1289,6 +1292,7 @@
 				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = JBP2638P2L;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				HEADER_SEARCH_PATHS = (
 					/Applications/CPLEX_Studio128/cplex/include,
 					/Applications/CPLEX_Studio128/concert/include,

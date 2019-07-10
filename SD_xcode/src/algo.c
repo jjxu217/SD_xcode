@@ -34,6 +34,8 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 	for ( int rep = 0; rep < config.NUM_REPS; rep++ ) {
 		fprintf(sFile, "\n====================================================================================================================================\n");
 		fprintf(sFile, "Replication-%d\n", rep+1);
+        fprintf(iFile, "\n====================================================================================================================================\n");
+        fprintf(iFile, "Replication-%d\n", rep+1);
 		fprintf(stdout, "\n====================================================================================================================================\n");
 		fprintf(stdout, "Replication-%d\n", rep+1);
 
@@ -43,10 +45,18 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 
 		if ( rep != 0 ) {
 			/* clean up the cell for the next replication */
-			if ( cleanCellType(cell, prob[0], meanSol) ) {
-				errMsg("algorithm", "algo", "failed clean the problem cell", 0);
-				goto TERMINATE;
-			}
+            freeCellType(cell);
+            cell = newCell(stoc, prob, meanSol);
+//            if ( cleanCellType(cell, prob[0], meanSol) ) {
+//                errMsg("algorithm", "algo", "failed clean the problem cell", 0);
+//                goto TERMINATE;
+//            }
+            #if defined(SETUP_CHECK)
+                        if ( writeProblem(cell->master->lp, "cleanedMILPMaster.lp") ) {
+                            errMsg("write problem", "new_master", "failed to write master problem to file",0);
+                            return 1;
+                        }
+            #endif
 		}
 
 		clock_t tic = clock();
@@ -95,6 +105,11 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 		fprintf(stdout, "\n------------------------------------------- Average solution ---------------------------------------\n\n");
 		/* Evaluate the average solution */
 		evaluate(sFile, stoc, prob, cell->subprob, batch->avgX);
+        
+        fprintf(iFile, "\n----------------------------------------- Compromise solution --------------------------------------\n\n");
+        printVector(batch->compromiseX, prob[0]->num->cols, iFile);
+        fprintf(iFile, "\n------------------------------------------- Average solution ---------------------------------------\n\n");
+        printVector(batch->avgX, prob[0]->num->cols, iFile);
 	}
 
 	fclose(sFile); fclose(iFile);
@@ -120,11 +135,15 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 	vector 	observ;
 	int		m, omegaIdx, candidCut=0;
 	BOOL 	newOmegaFlag;
-    int     newBasisCnt=0;
+    int     newBasisPosA[2];//The first element is the position of best basis for candid solution, the later is for incumb solution. -1 means no solution for it.
 	clock_t	tic;
     FILE     *solFile = NULL;
-
-    solFile = openFile(outputDir, "solutions.dat", "a");    
+    char solname[BLOCKSIZE];
+    static int sol_cnt = 0;
+    
+    sprintf(solname, "solutions%d.dat", sol_cnt);
+    solFile = openFile(outputDir, solname, "a");
+    sol_cnt++;
 	/* -+-+-+-+-+-+-+-+-+-+-+-+-+-+- Main Algorithm -+-+-+-+-+-+-+-+-+-+-+-+-+-+- */
 	if ( !(observ = (vector) arr_alloc(stoc->numOmega + 1, double)) )
 		errMsg("allocation", "solveCell", "observ", 0);
@@ -157,8 +176,11 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 		omegaIdx = calcOmega(observ - 1, 0, prob[1]->num->numRV, cell->omega, &newOmegaFlag, config.TOLERANCE);
 
 		/******* 3. Solve the subproblem with candidate solution, form and update the candidate cut *******/
+        //Initialize the new basis position for candid solution and incumb solution as -1
+        newBasisPosA[0] = -1;
+        newBasisPosA[1] = -1;
         if (cell->RepeatedTime == 0){
-            if ( (candidCut = formSDCut(prob, cell, cell->candidX, omegaIdx, &newOmegaFlag, prob[0]->lb, cell->argmax_best_candid, cell->pi_best_candid, FALSE)) < 0 ) {
+            if ( (candidCut = formSDCut(prob, cell, cell->candidX, omegaIdx, &newOmegaFlag, prob[0]->lb, cell->argmax_best_candid, cell->pi_best_candid, &newBasisPosA[0])) < 0 ) {
                 errMsg("algorithm", "solveCell", "failed to add candidate cut", 0);
                 goto TERMINATE;
             }
@@ -167,16 +189,24 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
 		/******* 4. Solve subproblem with incumbent solution, and form an incumbent cut *******/
         if (config.MASTER_TYPE == PROB_QP || config.MASTER_TYPE == PROB_MILP){
             if (((cell->k - cell->iCutUpdt) % config.TAU == 0 ) ) {
-                if ( (cell->iCutIdx = formSDCut(prob, cell, cell->incumbX, omegaIdx, &newOmegaFlag, prob[0]->lb, cell->argmax_best_incumb, cell->pi_best_incumb, TRUE) ) < 0 ) {
-                    errMsg("algorithm", "solveCell", "failed to create the incumbent cut", 0);
-                    goto TERMINATE;
+                if (cell->k == 1){
+                    if ( (cell->iCutIdx = formSDCut(prob, cell, cell->incumbX, omegaIdx, &newOmegaFlag, prob[0]->lb, cell->argmax_best_incumb, cell->pi_best_incumb, &newBasisPosA[1]) ) < 0 ) {
+                        errMsg("algorithm", "solveCell", "failed to create the incumbent cut", 0);
+                        goto TERMINATE;
+                    }
+                }
+                else{
+                    if ( (cell->iCutIdx = formIncumbSDCut(prob, cell, cell->incumbX, omegaIdx, &newOmegaFlag, prob[0]->lb, cell->argmax_best_incumb, cell->pi_best_incumb, newBasisPosA) ) < 0 ) {
+                        errMsg("algorithm", "solveCell", "failed to create the incumbent cut", 0);
+                        goto TERMINATE;
+                    }
                 }
                 cell->iCutUpdt = cell->k;
             }
         }
 
 		/******* 5. Check improvement in predicted values at candidate solution *******/
-        if ( cell->RepeatedTime == 0 && cell->k > 1)
+        if ( cell->RepeatedTime == 0 )
             /* If the candidX != incumbX, check improvement for candidX */
             checkImprovement(prob[0], cell, candidCut);
 

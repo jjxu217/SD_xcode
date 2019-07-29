@@ -349,7 +349,7 @@ stocType *readStoc(string inputDir, string probName, oneProblem *orig, timeType 
 	string 	*rvRows = NULL, *rvCols = NULL, *fields = NULL;
 	char	probpath[2*BLOCKSIZE], line[BLOCKSIZE], fieldType;
 	FILE	*fptr;
-    int		maxOmegas = 7010, maxVals = 200, n, numFields, maxFields = 10, maxGroups = 100;//Jiajun Setup: Omega: number of RVs; Vals: number of realization for each RVs,
+    int		maxOmegas = 11000, maxVals = 60, n, numFields, maxFields = 10, maxGroups = 130;//Jiajun Setup: Omega: number of RVs; Vals: number of realization for each RVs,
 
 	/* Locate the problem sto file */
 	sprintf(probpath, "%s%s/%s.sto", inputDir, probName, probName);

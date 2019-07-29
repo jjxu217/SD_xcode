@@ -102,7 +102,9 @@ oneCut *SDCut(numType *num, coordType *coord, basisType *basis, sigmaType *sigma
 	/* Pre-compute pi x Cbar x x as it is independent of observations */
 	if (!(piCbarX= arr_alloc(sigma->cnt, double)))
 		errMsg("Allocation", "SDCut", "pi_Tbar_x",0);
+#ifdef DEBUG
     printf("SD:sigma->cnt: = %d\n", sigma->cnt);
+#endif
     for (c = 0; c < sigma->cnt; c++){
 #ifdef DEBUG
         printf("c=%d ",c);
@@ -304,7 +306,9 @@ oneCut *IncumbSDCut(numType *num, coordType *coord, basisType *basis, sigmaType 
     /* Pre-compute pi x Cbar x x as it is independent of observations */
     if (!(piCbarX= arr_alloc(sigma->cnt, double)))
         errMsg("Allocation", "SDCut", "pi_Tbar_x",0);
+#ifdef DEBUG
     printf("SD:sigma->cnt: = %d\n", sigma->cnt);
+#endif
     for (c = 0; c < sigma->cnt; c++){
 #ifdef DEBUG
         printf("c=%d ",c);

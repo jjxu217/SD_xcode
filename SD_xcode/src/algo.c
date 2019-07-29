@@ -26,8 +26,8 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 		goto TERMINATE;
 
 	printf("Starting two-stage stochastic decomposition.\n");
-	sFile = openFile(outputDir, "results.dat", "w");
-	iFile = openFile(outputDir, "incumb.dat", "w");
+	sFile = openFile(outputDir, "results.txt", "w");
+	iFile = openFile(outputDir, "incumb.txt", "w");
 	printDecomposeSummary(sFile, probName, tim, prob);
 	printDecomposeSummary(stdout, probName, tim, prob);
 
@@ -99,17 +99,20 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 		fprintf(sFile, "\n====================================================================================================================================\n");
 		fprintf(sFile, "\n----------------------------------------- Compromise solution --------------------------------------\n\n");
 		/* Evaluate the compromise solution */
-		evaluate(sFile, stoc, prob, cell->subprob, batch->compromiseX);
+        fprintf(sFile, "Incumbent solution, non-zero position: ");
+		printVectorInSparse(batch->compromiseX, prob[0]->num->cols, sFile);
+        evaluate(sFile, stoc, prob, cell->subprob, batch->compromiseX);
 
 		fprintf(sFile, "\n------------------------------------------- Average solution ---------------------------------------\n\n");
 		fprintf(stdout, "\n------------------------------------------- Average solution ---------------------------------------\n\n");
 		/* Evaluate the average solution */
+        printVectorInSparse(batch->avgX, prob[0]->num->cols, sFile);
 		evaluate(sFile, stoc, prob, cell->subprob, batch->avgX);
         
         fprintf(iFile, "\n----------------------------------------- Compromise solution --------------------------------------\n\n");
-        printVector(batch->compromiseX, prob[0]->num->cols, iFile);
+        printVectorInSparse(batch->compromiseX, prob[0]->num->cols, iFile);
         fprintf(iFile, "\n------------------------------------------- Average solution ---------------------------------------\n\n");
-        printVector(batch->avgX, prob[0]->num->cols, iFile);
+        printVectorInSparse(batch->avgX, prob[0]->num->cols, iFile);
 	}
 
 	fclose(sFile); fclose(iFile);
@@ -141,7 +144,7 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
     char solname[BLOCKSIZE];
     static int sol_cnt = 0;
     
-    sprintf(solname, "solutions%d.dat", sol_cnt);
+    sprintf(solname, "solutions%d.txt", sol_cnt);
     solFile = openFile(outputDir, solname, "a");
     sol_cnt++;
 	/* -+-+-+-+-+-+-+-+-+-+-+-+-+-+- Main Algorithm -+-+-+-+-+-+-+-+-+-+-+-+-+-+- */
@@ -206,9 +209,8 @@ int solveCell(stocType *stoc, probType **prob, cellType *cell) {
         }
 
 		/******* 5. Check improvement in predicted values at candidate solution *******/
-        if ( cell->RepeatedTime == 0 )
-            /* If the candidX != incumbX, check improvement for candidX */
-            checkImprovement(prob[0], cell, candidCut);
+
+        checkImprovement(prob[0], cell, candidCut);
 
 		/******* 6. Solve the master problem to obtain the new candidate solution */
 		if (config.MASTER_TYPE == PROB_QP){
@@ -253,6 +255,8 @@ void writeOptimizationSummary(FILE *soln, FILE *incumb, probType **prob, cellTyp
 	fprintf(soln, "\n------------------------------------------- Optimization -------------------------------------------\n\n");
 
 	fprintf(soln, "Algorithm                              : Two-stage Stochastic Decomposition\n");
+    fprintf(soln, "Incumbent solution, non-zero position: ");
+    printVectorInSparse(cell->incumbX, prob[0]->num->cols, soln);
 	fprintf(soln, "Number of iterations                   : %d\n", cell->k);
 	fprintf(soln, "Lower bound estimate                   : %f\n", cell->incumbEst);
 	fprintf(soln, "Total time                             : %f\n", cell->time.repTime);
@@ -262,7 +266,9 @@ void writeOptimizationSummary(FILE *soln, FILE *incumb, probType **prob, cellTyp
 	fprintf(soln, "Total time in verifying optimality     : %f\n", cell->time.optTestAccumTime);
 
 	if ( incumb != NULL ) {
-		printVector(cell->incumbX, prob[0]->num->cols, incumb);
+        printVectorInSparse(cell->incumbX, prob[0]->num->cols, incumb);
+        
+		//printVector(cell->incumbX, prob[0]->num->cols, incumb);
 	}
 
 }//END WriteStat
@@ -271,10 +277,10 @@ void writeOptimizationSummary(FILE *soln, FILE *incumb, probType **prob, cellTyp
 void writeSolSummary(FILE *sol, cellType *cell, int cols){
     fprintf(sol, "\n--------------iteration %d--------------------\n", cell->k);
     
-    fprintf(sol, "incumbX: \n");
-    printVector(cell->incumbX, cols, sol);
+    fprintf(sol, "incumbX: non-zero elements ");
+    printVectorInSparse(cell->incumbX, cols, sol);
     
-    fprintf(sol, "candidX: \n");
-    printVector(cell->candidX, cols, sol);
+    fprintf(sol, "candidX: non-zero elements ");
+    printVectorInSparse(cell->candidX, cols, sol);
 }
 

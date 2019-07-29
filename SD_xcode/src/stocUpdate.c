@@ -141,8 +141,9 @@ int stochasticUpdates(probType *prob, LPptr lp, basisType *basis, lambdaType *la
     }
 //    printf("sigma val in StochasticUpdates3():");
 //    printVector(sigma->vals[0].piC, prob->num->cntCcols, NULL);
-    
+#ifdef DEBUG
     printf("basis->cnt = %d", basis->cnt);
+#endif
     *newBasisPos = basis->cnt;
 	return basis->cnt++;
 

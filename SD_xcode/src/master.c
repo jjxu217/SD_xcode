@@ -142,15 +142,11 @@ int solveMILPMaster(numType *num, sparseVector *dBar, cellType *cell, double lb)
     addVectors(cell->candidX, cell->incumbX, NULL, num->cols);
     
 #ifdef DEBUG
-    printf("candidX: \n");
-    for (i = 1; i <= num->cols; i++)
-        printf("%f ", cell->candidX[i]);
-    printf("\n");
+    printf("candidX: non-zero elements ");
+    printVectorInSparse(cell->candidX, num->cols, NULL);
     
-    printf("incumbX: \n");
-    for (i = 1; i <= num->cols; i++)
-        printf("%f ", cell->incumbX[i]);
-    printf("\n");
+    printf("incumbX: non-zero elements ");
+    printVectorInSparse(cell->incumbX, num->cols, NULL);
 #endif
     //Jiajun check: what's the fuction of this
     /* update d_norm_k in soln_type. */

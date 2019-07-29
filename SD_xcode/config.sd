@@ -17,7 +17,7 @@ CUT_MULT  1
 TAU 1
 
 // The Minimum value of the cell->quad_scalar.
-MIN_QUAD_SCALAR 10
+MIN_QUAD_SCALAR 0.01
 
 // Run seeds
 RUN_SEED    4650175399072632
@@ -75,10 +75,10 @@ EVAL_SEED	4742397086462006
 
 // ******************************* The following parameters are useful only for 2-SD algorithm ******************************* 
 // The Maximum value of the cell->quad_scalar.
-MAX_QUAD_SCALAR 10000.0
+MAX_QUAD_SCALAR 1.0
 
 // Amount of improvement which must be observed in order to update incumbent X.
-R1 0.2
+R1 0.05
 
 // For updating the scaling factor.
 R2 0.95

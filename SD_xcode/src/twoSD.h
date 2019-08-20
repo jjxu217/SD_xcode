@@ -215,6 +215,7 @@ void printCut(cutsType *cuts, numType *num, int idx);
 void freeOneCut(oneCut *cut);
 void freeCutsType(cutsType *cuts, BOOL partial);
 double calc_var(double *x, double *mean_value, double *stdev_value, int batch_size);
+int addCut2Pool(cellType *cell, oneCut *cut, int lenX, double lb, BOOL feasCut);
 
 /* soln.c */
 int checkImprovement(probType *prob, cellType *cell, int candidCut);
@@ -224,7 +225,9 @@ double cutHeight(oneCut *cut, int currIter, vector xk, int betaLen, double lb);
 
 /* optimal.c */
 BOOL optimal(probType **prob, cellType *cell);
-BOOL preTest(cellType *cell);
+BOOL preTest(probType **prob, cellType *cell);
+BOOL BendersTest(probType **prob, cellType *cell);
+int formBendersCut(cellType *cell, oneProblem *master, probType **prob, oneProblem *subproblem, vector Xvect, omegaType *omega, int numSamples);
 BOOL fullTest(probType **prob, cellType *cell);
 cutsType *chooseCuts(cutsType *cuts, vector pi, int lenX);
 void reformCuts(basisType *basis, sigmaType *sigma, deltaType *delta, omegaType *omega, numType *num, coordType *coord,

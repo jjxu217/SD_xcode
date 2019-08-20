@@ -2,10 +2,10 @@
 TOLERANCE    0.001
 
 // Minimum iterations
-MIN_ITER 500
+MIN_ITER 1000
 
 // Maximum number of iterations
-MAX_ITER   1000
+MAX_ITER   5000
 
 // Master type: 0 for LP, 1 for MILP, 5 for QP and 7 for MIQP
 MASTER_TYPE 1
@@ -30,13 +30,22 @@ RUN_SEED    1098833779416153
 RUN_SEED    6192593982049265
 RUN_SEED    4756774140130874
 RUN_SEED    6784592265109609
-
+RUN_SEED    9728429908537680
+RUN_SEED    1163479388309571
+RUN_SEED    3279282318700126
+RUN_SEED    8773753208032360
+RUN_SEED    9337302665697748
+RUN_SEED    4415169667296773
+RUN_SEED    4220432037464045
+RUN_SEED    3554548844580680
+RUN_SEED    1814300451929103
+RUN_SEED    5339672949292608
 
 // Indicate whether to employ (by setting equal to 1) evaluation of the eventual solution
 EVAL_FLAG 1
 
 // Solution tolerance for deciding the usage of mean solution.
-EVAL_MIN_ITER 1000
+EVAL_MIN_ITER 2000
 
 // Obj. eval. is accurate to within this much, w/95% confidence
 EVAL_ERROR 0.01

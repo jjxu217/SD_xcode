@@ -523,6 +523,7 @@ int calcOmega(vector observ, int begin, int end, omegaType *omega, BOOL *newOmeg
 int computeMU(LPptr lp, intvec cstat, int numCols, double *mubBar) {
 	vector	dj, u;
 	int		n;
+    BOOL Indicator=FALSE;
 
 	(*mubBar) = 0.0;
 
@@ -530,6 +531,11 @@ int computeMU(LPptr lp, intvec cstat, int numCols, double *mubBar) {
 		errMsg("allocation", "computeMu", "dual slacks", 0);
 	if ( !(u = (vector) arr_alloc(numCols+1, double)))
 		errMsg("allocation", "computeMu", "TDA solutions", 0);
+    if (cstat == NULL){
+        Indicator = TRUE;
+        if ( !(cstat = (intvec) arr_alloc( numCols+1, int)))
+            errMsg("allocation", "stochasticUpdates", "cstat", 0);
+    }
 
 	if ( getPrimal(lp, u, numCols) ) {
 		errMsg("solver", "forOptPass", "failed to obtain primal solution", 0);
@@ -554,6 +560,9 @@ int computeMU(LPptr lp, intvec cstat, int numCols, double *mubBar) {
 	}
 
 	mem_free(u); mem_free(dj);
+    
+    if (Indicator)
+        mem_free(cstat);
 
 	return 0;
 }//END compute_mu()

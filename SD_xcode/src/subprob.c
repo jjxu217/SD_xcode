@@ -164,6 +164,15 @@ int computeCostCoeff(LPptr lp, numType *num, coordType *coord, sparseVector *dBa
 	cost = expandVector(dBar->val, dBar->col, dBar->cnt, num->cols);
 	for (cnt = 1; cnt <= dOmega.cnt; cnt++)
 		cost[dOmega.col[cnt]] += dOmega.val[cnt];
+    
+#ifdef DEBUG
+    printf("coord->rvOffset[2]=%d \n", coord->rvOffset[2]);
+    printf("cost\n");
+    for (cnt = 0; cnt <= dOmega.cnt; cnt++)
+        printf("%4.6lf, ", dOmega.val[cnt]);
+    printf("\n");
+#endif
+    
 
 	/* change cost coefficients in the solver */
 	if ( changeObjx(lp, num->cols, indices, cost+1) ) {

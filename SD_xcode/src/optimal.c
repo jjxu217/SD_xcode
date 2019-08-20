@@ -13,25 +13,24 @@
 
 extern configType config;
 
+/* This function determines whether or not the current incumbent solution is considered to be optimal. Optimality is guarenteed if the
+ * following criteria are satisfied:
+ *         0. Minimum number of iterations have been completed.
+ *         1. Current solution repeat for enough iterations.
+ *         2. Run benders to see if current solution is optimal
+ * The pre-test is performed for criteria 0, 1, and the full test is performed only if the pre-test is successful. */
 BOOL optimal(probType **prob, cellType *cell) {
-    int i;
-    BOOL sameIndicator = TRUE;
     
-    for (i = 0; i <= prob[0]->num->cols; i++){
-        if (DBL_ABS(cell->candidX[i] - cell->incumbX[i]) > config.TOLERANCE){
-            sameIndicator = FALSE;
-            break;
+    if (preTest(prob, cell)){
+        if ((cell->optFlag = BendersTest(prob, cell)) == TRUE) {
+            /* full test satisfied */
+            printf (">"); fflush(stdout);
+            return TRUE;
+        }
+        else {
+            printf(">"); fflush(stdout);
         }
     }
-    if (sameIndicator)
-        cell->RepeatedTime++;
-    else
-        cell->RepeatedTime = 0;
-    
-    if (cell->k > config.MIN_ITER && cell->RepeatedTime > config.OP_ratio * config.MIN_ITER)
-        return TRUE;
-    
-    
     return FALSE;
 }//optimal()
 /* This function determines whether or not the current incumbent solution is considered to be optimal. Optimality is guarenteed if the
@@ -65,20 +64,150 @@ BOOL optimal(probType **prob, cellType *cell) {
 
 /* Because checking optimality is an arduous task, we first do a pre-check to determine if the full test is worthwhile. This function
  * determines whether the height at the candidate is close enough to the height at the incumbent to warrant an optimality test. */
-BOOL preTest(cellType *cell) {
-
-	/* The candidate must be within some small percentage of incumbent cut */
-	/* rare situation for cell->candid_est < 0 and cell->incumb_est > 0 */
-	/* Note: cell->candidEst and cell->incumbEst could be 0 */
-	if (cell->candidEst >= 0){
-		cell->optFlag = (cell->candidEst >= (1 - config.PRE_EPSILON) * cell->incumbEst);
-	}
-	else
-		cell->optFlag = (cell->candidEst > (1 + config.PRE_EPSILON) * cell->incumbEst);
-
-	return cell->optFlag;
-
+BOOL preTest(probType **prob, cellType *cell) {
+    int i;
+    BOOL sameIndicator = TRUE;
+    
+    /*pre-test optimal: check current solution repeat time*/
+    for (i = 0; i <= prob[0]->num->cols; i++){
+        if (DBL_ABS(cell->candidX[i] - cell->incumbX[i]) > config.TOLERANCE){
+            sameIndicator = FALSE;
+            break;
+        }
+    }
+    if (sameIndicator)
+        cell->RepeatedTime++;
+    else
+        cell->RepeatedTime = 0;
+    
+    if (cell->k > config.MIN_ITER && cell->RepeatedTime > config.OP_ratio * config.MIN_ITER)
+        return TRUE;
+    
+    return FALSE;
 }//END preTest()
+
+/*When pretest is statisfied, check if current solution is optimal from Benders' perspective*/
+BOOL BendersTest(probType **prob, cellType *cell){
+    int i,NumRows;
+    
+    
+    formBendersCut(cell, cell->master, prob, cell->subprob, cell->incumbX, cell->omega, cell->k);
+    
+    if (config.MASTER_TYPE == PROB_MILP){
+        if ( solveMILPMaster(prob[0]->num, prob[0]->dBar, cell, prob[0]->lb) ) {
+            errMsg("algorithm", "solveCell", "failed to solve master problem", 0);
+        }
+    }
+    
+    for (i = 0; i <= prob[0]->num->cols; i++){
+        if (DBL_ABS(cell->candidX[i] - cell->incumbX[i]) > config.TOLERANCE){
+//            /*remove the Benders' Cut from the master problem*/
+//            NumRows = getNumRows(cell->master->lp);
+//
+//            if (  removeRow(cell->master->lp, NumRows-1, NumRows-1) ) {
+//                errMsg("solver", "BendersTest", "failed to remove a row from master problem", 0);
+            
+            return FALSE;
+            
+        }
+    }
+    
+    
+    return TRUE;
+    
+}
+
+int formBendersCut(cellType *cell, oneProblem *master, probType **prob, oneProblem *subproblem, vector Xvect, omegaType *omega, int numSamples){
+    int omegaIdx, status, i, cutIdx;
+    double alpha, mubBar;
+    vector beta, pi, temp, piCBar;
+    oneCut *cut;
+    
+    /* allocate memory to hold a new cut */
+    cut = newCut(prob[1]->num->prevCols, omega->cnt, numSamples);
+    
+    alpha = 0.0;
+    if ( !(beta = (vector) arr_alloc(prob[1]->num->prevCols + 1, double)) )
+        errMsg("Allocation", "formBendersCut", "beta", 0);
+    if ( !(pi = (vector) arr_alloc(prob[1]->num->rows + 1, double)) )
+        errMsg("Allocation", "formBendersCut", "pi", 0);
+    
+    for (omegaIdx = 0; omegaIdx < omega->cnt; omegaIdx++){
+        /* (a) compute and change the right-hand side using current observation and first-stage solution */
+        if ( computeRHS(subproblem->lp, prob[1]->num, prob[1]->coord, prob[1]->bBar, prob[1]->Cbar, Xvect, omega->vals[omegaIdx]) ) {
+            errMsg("algorithm", "formBendersCut", "failed to compute subproblem right-hand side", 0);
+        }
+        
+        if ( prob[1]->num->rvdOmCnt > 0 ) {
+            /* (b) Compute and change the cost coefficients using current observation */
+            if ( computeCostCoeff(subproblem->lp, prob[1]->num, prob[1]->coord, prob[1]->dBar, omega->vals[omegaIdx]) ) {
+                errMsg("algorithm", "formBendersCut", "failed to compute subproblem cost coefficients", 0);
+            }
+        }
+        
+    #if defined(ALGO_CHECK)
+        writeProblem(subproblem->lp, "subproblem_Benders.lp");
+    #endif
+        
+        /* (c) Solve the subproblem to obtain the optimal dual solution. */
+        changeLPSolverType(ALG_NET);  //Jiajun: sub-problem type
+        if ( solveProblem(subproblem->lp, subproblem->name, subproblem->type, &status) ) {
+            if ( status == STAT_INFEASIBLE ) {
+                /* Set the subproblem feasibility flag to false and proceed to complete stochastic updates. These updates are
+                 * used to generate the feasibility cuts later. */
+                printf("Subproblem is infeasible for current first-stage decision and observation.\n");
+                writeProblem(subproblem->lp, "infeasibleSP.lp");
+            }
+            else {
+                errMsg("algorithm", "formBendersCut", "failed to solve subproblem in solver", 0);
+            }
+        }
+        
+        if ( getDual(subproblem->lp, pi, prob[1]->num->rows) ) {
+            errMsg("algorithm", "formBendersCut", "failed to get the dual", 0);
+        }
+        
+        if ( computeMU(subproblem->lp, NULL, prob[1]->num->cols, &mubBar) ) {
+            errMsg("algorithm", "stochasticUpdates", "failed to compute mubBar for subproblem", 0);
+            return 1;
+        }
+        
+        alpha += omega->weights[omegaIdx] * (vXvSparse(pi, prob[1]->bBar) + mubBar);
+        
+        temp = vxMSparse(pi, prob[1]->Cbar, prob[1]->num->prevCols);
+        piCBar = reduceVector(temp, prob[1]->coord->CCols, prob[1]->num->cntCcols);
+        mem_free(temp);
+        
+        for (i = 1; i <= prob[1]->num->cntCcols; i++)
+            beta[prob[1]->coord->CCols[i]] += omega->weights[omegaIdx] * piCBar[i];
+    }
+    
+    cut->alpha = alpha / numSamples;
+    
+    for (i = 1; i <= prob[1]->num->prevCols; i++)
+        cut->beta[i] = beta[i] / numSamples;
+    cut->beta[0] = 1.0;            /* coefficient of eta coloumn */
+    
+    mem_free(piCBar);
+    mem_free(beta);
+    mem_free(pi);
+    
+    //add the new incumbent SD Cut into Pool
+  
+    
+    if ( (cutIdx = addCut2Pool(cell, cut, prob[0]->num->cols, prob[0]->lb, FALSE)) < 0) {
+        errMsg("algorithm", "formSDCut", "failed to add the new cut to cutsType structure", 0);
+        return -1;
+    }
+    
+    if ( addCut2Master(master, cut, Xvect, prob[0]->num->cols) ) {
+        errMsg("algorithm", "formSDCut", "failed to add the new cut to master problem", 0);
+    }
+    
+    /*free the benders cut*/
+    //freeOneCut(cut);
+    return cutIdx;
+}
 
 /* This function performs a complete statistical test of optimality. First, it selects cuts whose height at the incumbent is "close" to
  * incumbent cut's height.  Then, it performs M resamplings of the observations in omega, and reforms the selected cuts with respect
@@ -88,76 +217,76 @@ BOOL preTest(cellType *cell) {
  * Single-cut version first selects "good" cuts in the master prob. Then by using the information of these "good" cuts to find the
  * corresponding cuts in each agent. After reforming these agent cuts, aggregated these reformed cuts as one single cut and add it to the
  * master problem */
-BOOL fullTest(probType **prob, cellType *cell) {
-	cutsType *gCuts;
-	intvec  cdf, observ;
-	double  est, ht, LB = prob[0]->lb;
-	int 	numPass = 0, rep, j;
-
-	clock_t tic = clock();
-	/* (a) choose good cuts */
-	gCuts = chooseCuts(cell->cuts, cell->piM, prob[0]->num->cols);
-	if ( gCuts->cnt == 0 ) {
-		freeCutsType(gCuts, FALSE);
-		return FALSE;
-	}
-
-	/* (b) calculate empirical distribution of omegas */
-	if ( !(cdf = (intvec) arr_alloc(cell->omega->cnt+1, int)) )
-		errMsg("allocation", "fullTest", "failed to allocate memory to cdf",0);
-	if ( !(observ = (intvec) arr_alloc(cell->k, int)))
-		errMsg("allocation", "fullTest", "resampled observations", 0);
-
-	empiricalDistribution(cell->omega, cdf);
-
-	for (rep = 0; rep < config.BOOTSTRAP_REP; rep++) {
-		/* (c) resample from the set of observations */
-		resampleOmega(cdf, observ, cell->k-1);
-
-		/* (d) reform the good cuts by plugging in the omegas */
-		reformCuts(cell->basis, cell->sigma, cell->delta, cell->omega, prob[1]->num, prob[1]->coord,
-				gCuts, observ, cell->k-1, cell->lbType, prob[0]->lb, prob[0]->num->cols);
-
-		/* (e) find out the best reformed cut estimate at the incumbent solution */
-		est = gCuts->vals[0]->alpha - vXv(gCuts->vals[0]->beta, cell->incumbX, NULL, prob[0]->num->cols);
-		for (j = 1; j < gCuts->cnt; j++) {
-			ht = gCuts->vals[j]->alpha - vXv(gCuts->vals[j]->beta, cell->incumbX, NULL, prob[0]->num->cols);
-			if ( est < ht)
-				est = ht;
-		}
-
-		/* (f) Solve the master with reformed "good cuts" (all previous cuts are dropped) to obtain a lowe bound. In QP approach,
-		 * we don't include the incumb_x * c in estimate */
-		if (config.MASTER_TYPE == PROB_LP) {
-			est += vXvSparse(cell->incumbX, prob[0]->dBar);
-			// TODO: solve a temporary master problem
-			errMsg("optimality", "fullTest", "lower bound calculations are incomplete", 1);
-		}
-		else
-			LB = calcBootstrpLB(prob[0], cell->incumbX, cell->piM, cell->djM, cell->k, cell->quadScalar, gCuts);
-
-#if 0
-		printf("\niter = %d, replication = %d, UB = %f, LB = %f, Gap = %lf", cell->k, rep, est, LB, DBL_ABS((est - LB) / cell->incumbEst));
-#endif
-
-		/* (g) compare the normalized difference between estimate and the lower bound. If the problem is a QP problem, we don't need add the constant term c^T x \hat{x} */
-		if (DBL_ABS((est - LB) / cell->incumbEst) <= config.EPSILON)
-			numPass++;
-
-		/* (h) check No. of fails. skip out of the loop if there's no hope of meeting the condition */
-		if ( rep + 1 - numPass >= (1 - config.PERCENT_PASS) * config.BOOTSTRAP_REP) {
-			/* The bootstrap test has failed */
-			mem_free(cdf); mem_free(observ); freeCutsType(gCuts, FALSE);
-			return FALSE;
-		}
-	}//END replication loop
-	cell->time.optTestIter += ((double) (clock()-tic))/CLOCKS_PER_SEC;
-
-	mem_free(cdf); mem_free(observ);
-	freeCutsType(gCuts, FALSE);
-	return TRUE;
-
-}//END full_test()
+//BOOL fullTest(probType **prob, cellType *cell) {
+//    cutsType *gCuts;
+//    intvec  cdf, observ;
+//    double  est, ht, LB = prob[0]->lb;
+//    int     numPass = 0, rep, j;
+//
+//    clock_t tic = clock();
+//    /* (a) choose good cuts */
+//    gCuts = chooseCuts(cell->cuts, cell->piM, prob[0]->num->cols);
+//    if ( gCuts->cnt == 0 ) {
+//        freeCutsType(gCuts, FALSE);
+//        return FALSE;
+//    }
+//
+//    /* (b) calculate empirical distribution of omegas */
+//    if ( !(cdf = (intvec) arr_alloc(cell->omega->cnt+1, int)) )
+//        errMsg("allocation", "fullTest", "failed to allocate memory to cdf",0);
+//    if ( !(observ = (intvec) arr_alloc(cell->k, int)))
+//        errMsg("allocation", "fullTest", "resampled observations", 0);
+//
+//    empiricalDistribution(cell->omega, cdf);
+//
+//    for (rep = 0; rep < config.BOOTSTRAP_REP; rep++) {
+//        /* (c) resample from the set of observations */
+//        resampleOmega(cdf, observ, cell->k-1);
+//
+//        /* (d) reform the good cuts by plugging in the omegas */
+//        reformCuts(cell->basis, cell->sigma, cell->delta, cell->omega, prob[1]->num, prob[1]->coord,
+//                gCuts, observ, cell->k-1, cell->lbType, prob[0]->lb, prob[0]->num->cols);
+//
+//        /* (e) find out the best reformed cut estimate at the incumbent solution */
+//        est = gCuts->vals[0]->alpha - vXv(gCuts->vals[0]->beta, cell->incumbX, NULL, prob[0]->num->cols);
+//        for (j = 1; j < gCuts->cnt; j++) {
+//            ht = gCuts->vals[j]->alpha - vXv(gCuts->vals[j]->beta, cell->incumbX, NULL, prob[0]->num->cols);
+//            if ( est < ht)
+//                est = ht;
+//        }
+//
+//        /* (f) Solve the master with reformed "good cuts" (all previous cuts are dropped) to obtain a lowe bound. In QP approach,
+//         * we don't include the incumb_x * c in estimate */
+//        if (config.MASTER_TYPE == PROB_LP) {
+//            est += vXvSparse(cell->incumbX, prob[0]->dBar);
+//            // TODO: solve a temporary master problem
+//            errMsg("optimality", "fullTest", "lower bound calculations are incomplete", 1);
+//        }
+//        else
+//            LB = calcBootstrpLB(prob[0], cell->incumbX, cell->piM, cell->djM, cell->k, cell->quadScalar, gCuts);
+//
+//#if 0
+//        printf("\niter = %d, replication = %d, UB = %f, LB = %f, Gap = %lf", cell->k, rep, est, LB, DBL_ABS((est - LB) / cell->incumbEst));
+//#endif
+//
+//        /* (g) compare the normalized difference between estimate and the lower bound. If the problem is a QP problem, we don't need add the constant term c^T x \hat{x} */
+//        if (DBL_ABS((est - LB) / cell->incumbEst) <= config.EPSILON)
+//            numPass++;
+//
+//        /* (h) check No. of fails. skip out of the loop if there's no hope of meeting the condition */
+//        if ( rep + 1 - numPass >= (1 - config.PERCENT_PASS) * config.BOOTSTRAP_REP) {
+//            /* The bootstrap test has failed */
+//            mem_free(cdf); mem_free(observ); freeCutsType(gCuts, FALSE);
+//            return FALSE;
+//        }
+//    }//END replication loop
+//    cell->time.optTestIter += ((double) (clock()-tic))/CLOCKS_PER_SEC;
+//
+//    mem_free(cdf); mem_free(observ);
+//    freeCutsType(gCuts, FALSE);
+//    return TRUE;
+//
+//}//END full_test()
 
 /* This function selects all cuts whose height at the incumbent solution is close to the height of the incumbent cut. These cuts together
  * are likely to provide good approximations of the recourse function at incumbent solution, when they are reformed with new observations.

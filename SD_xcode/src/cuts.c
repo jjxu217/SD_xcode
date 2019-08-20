@@ -17,7 +17,7 @@ int resolveInfeasibility(probType **prob, cellType *cell, BOOL *newOmegaFlag, in
 int formFeasCut(probType *prob, cellType *cell);
 int updtFeasCutPool(numType *num, coordType *coord, cellType *cell);
 int checkFeasCutPool(cellType *cell, int lenX);
-int addCut2Pool(cellType *cell, oneCut *cut, int lenX, double lb, BOOL feasCut);
+//int addCut2Pool(cellType *cell, oneCut *cut, int lenX, double lb, BOOL feasCut);
 
 int formSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx, BOOL *newOmegaFlag, double lb, vector argmax_best, intvec pi_best, int *newBasisPos) {
 	oneCut 	*cut;
@@ -280,8 +280,8 @@ int formIncumbSDCut(probType **prob, cellType *cell, vector Xvect, int omegaIdx,
         return -1;
     }
 
-    //add the new incumbent SD Cut into Pool
-    cell->cuts->cnt++;
+    //add the new incumbent SD Cut into master LP
+    cell->cuts->cnt++;//Since in dropCut(), cell->cuts->cnt--
     cell->cuts->vals[cell->iCutIdx] = cut;
     
     if ( addCut2Master(cell->master, cut, cell->incumbX, prob[0]->num->cols) ) {

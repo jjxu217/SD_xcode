@@ -99,7 +99,7 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 		fprintf(sFile, "\n====================================================================================================================================\n");
 		fprintf(sFile, "\n----------------------------------------- Compromise solution --------------------------------------\n\n");
 		/* Evaluate the compromise solution */
-        fprintf(sFile, "Incumbent solution, non-zero position: ");
+        fprintf(sFile, "Incumbent solution, non-zero position (1-indexed) : ");
 		printVectorInSparse(batch->compromiseX, prob[0]->num->cols, sFile);
         evaluate(sFile, stoc, prob, cell->subprob, batch->compromiseX);
 
@@ -277,10 +277,10 @@ void writeOptimizationSummary(FILE *soln, FILE *incumb, probType **prob, cellTyp
 void writeSolSummary(FILE *sol, cellType *cell, int cols){
     fprintf(sol, "\n--------------iteration %d--------------------\n", cell->k);
     
-    fprintf(sol, "incumbX: non-zero elements ");
+    fprintf(sol, "incumbX: non-zero elements (1-indexed) ");
     printVectorInSparse(cell->incumbX, cols, sol);
     
-    fprintf(sol, "candidX: non-zero elements ");
+    fprintf(sol, "candidX: non-zero elements (1-indexed) ");
     printVectorInSparse(cell->candidX, cols, sol);
 }
 

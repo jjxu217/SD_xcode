@@ -28,7 +28,7 @@ int solveProblem(LPptr lp, string pname, int type, int *status) {
 		(*status) = CPXqpopt(env, lp);
 		break;
 	case PROB_MILP:
-       // setIntParam(PARAM_PREIND, OFF);
+       //setIntParam(PARAM_PREIND, OFF);
 		(*status) = CPXmipopt(env, lp);
       //  setIntParam(PARAM_PREIND, ON);
 		break;
@@ -213,9 +213,8 @@ void openSolver(){
 	}
 
     status = setIntParam(PARAM_SCRIND, OFF);
+    status = setIntParam(CPXPARAM_MIP_Display, 0);
 #ifdef DEBUG
-    //status = CPXsetintparam (env, CPXPARAM_ScreenOutput, CPX_ON);
-    //status = CPXsetintparam(env, PARAM_SCRIND, ON);
     status = setIntParam(PARAM_SCRIND, ON);
 #endif
 

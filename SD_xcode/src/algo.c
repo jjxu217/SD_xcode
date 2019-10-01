@@ -18,6 +18,7 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 	vector	 meanSol = NULL;
 	probType **prob = NULL;
 	cellType *cell = NULL;
+    clock_t tic;
 	batchSummary *batch = NULL;
 	FILE 	*sFile = NULL, *iFile = NULL;
 
@@ -59,7 +60,7 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
             #endif
 		}
 
-		clock_t tic = clock();
+		tic = clock();
 		/* Use two-stage stochastic decomposition algorithm to solve the problem */
 		if ( solveCell(stoc, prob, cell) ) {
 			errMsg("algorithm", "algo", "failed to solve the cell using 2-SD algorithm", 0);
@@ -89,10 +90,12 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 
 	if ( config.MULTIPLE_REP ) {
 		/* Solve the compromise problem. */
+        tic = clock();
 		if ( solveCompromise(prob[0], batch)) {
 			errMsg("algorithm", "algo", "failed to solve the compromise problem", 0);
 			goto TERMINATE;
 		}
+        batch->time->repTime += ((double) (clock() - tic))/CLOCKS_PER_SEC;
 
 		fprintf(sFile, "\n====================================================================================================================================\n");
 		fprintf(sFile, "\n----------------------------------------- Compromise solution --------------------------------------\n\n");
@@ -102,6 +105,12 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
         fprintf(sFile, "Incumbent solution, non-zero position (1-indexed) : ");
 		printVectorInSparse(batch->compromiseX, prob[0]->num->cols, sFile);
         evaluate(sFile, stoc, prob, cell->subprob, batch->compromiseX);
+        fprintf(sFile, "Total time                         : %f\n", batch->time->repTime);
+        fprintf(sFile, "Total time to solve master         : %f\n", batch->time->masterAccumTime);
+        fprintf(sFile, "Total time to solve subproblems    : %f\n", batch->time->subprobAccumTime);
+        fprintf(sFile, "Total time in argmax procedure         : %f\n", batch->time->argmaxAccumTime);
+        
+        fprintf(sFile, "Lower bound estimate               : %f\n", batch->Est);
 
 		fprintf(sFile, "\n------------------------------------------- Average solution ---------------------------------------\n\n");
 		fprintf(stdout, "\n------------------------------------------- Average solution ---------------------------------------\n\n");

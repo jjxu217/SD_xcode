@@ -160,6 +160,8 @@ typedef struct {
 	vector		*incumbX;			/* batch incumbent solution */
 	vector		compromiseX;		/* compromise solution */
 	vector		avgX;				/* average solution across batches */
+    runTime        *time;                /* Run time structure */
+    double         Est;                 /*lower bound estimation*/
 }batchSummary;
 
 /* twoSD.c */

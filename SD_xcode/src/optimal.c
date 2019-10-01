@@ -22,7 +22,8 @@ extern configType config;
 BOOL optimal(probType **prob, cellType *cell) {
     
     if (preTest(prob, cell)){
-        if ((cell->optFlag = BendersTest(prob, cell)) == TRUE) {
+        cell->optFlag = BendersTest(prob, cell);
+        if (cell->optFlag == TRUE) {
             /* full test satisfied */
             printf (">"); fflush(stdout);
             return TRUE;

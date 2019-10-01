@@ -120,7 +120,7 @@ int computeRHS(LPptr lp, numType *num, coordType *coord, sparseVector *bBar, spa
 	/* Start with the values of bBar*/
 	rhs = expandVector(bBar->val, bBar->col, bBar->cnt, num->rows);
 
-	/* (cumulatively) subtract values of Cbar X X -- both fixed and varying */
+	/* (cumulatively) subtract values of Cbar X X -- fixed  */
 	rhs = MSparsexvSub(Cbar, X, rhs);
 	
     //if RHS contain RVs, then rhs += bomega - Comega * X

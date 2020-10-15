@@ -178,7 +178,7 @@ cellType *newCell(stocType *stoc, probType **prob, vector xk) {
 
 		cell->incumbChg = FALSE;
 #if defined(SETUP_CHECK)
-		if ( writeProblem(cell->aster->lp, "newQPMaster.lp") ) {
+		if ( writeProblem(cell->master->lp, "newQPMaster.lp") ) {
 			errMsg("write problem", "new_master", "failed to write master problem to file",0);
 			return NULL;
 		}
@@ -260,7 +260,7 @@ int cleanCellType(cellType *cell, probType *prob, vector xk) {
 
 		cell->incumbChg = FALSE;
 #if defined(SETUP_CHECK)
-		if ( writeProblem(cell->aster->lp, "cleanedQPMaster.lp") ) {
+		if ( writeProblem(cell->master->lp, "cleanedQPMaster.lp") ) {
 			errMsg("write problem", "new_master", "failed to write master problem to file",0);
 			return 1;
 		}

@@ -88,7 +88,7 @@ int evaluate(FILE *soln, stocType *stoc, probType **prob, oneProblem *subprob, v
 		else {
 			temp = mean;
 			mean = mean + (obj - mean) / (double) (cnt + 1);
-			variance  = (1 - 1 / (double) cnt) * variance + (cnt + 1) * (mean - temp) * (mean - temp);
+			variance = ( cnt / (cnt + 1)) * variance + (cnt) * (mean - temp) * (mean - temp);
 			stdev = sqrt(variance/ (double) cnt);
 		}
 		cnt++;

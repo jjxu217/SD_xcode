@@ -19,6 +19,7 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 	probType **prob = NULL;
 	cellType *cell = NULL;
 	batchSummary *batch = NULL;
+    int j;
 	FILE 	*sFile = NULL, *iFile = NULL;
 
 	/* complete necessary initialization for the algorithm */
@@ -34,6 +35,9 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 	for ( int rep = 0; rep < config.NUM_REPS; rep++ ) {
 		fprintf(sFile, "\n====================================================================================================================================\n");
 		fprintf(sFile, "Replication-%d\n", rep+1);
+        fprintf(iFile, "Replication-%d\n", rep+1);
+        fprintf(iFile, "\n====================================================================================================================================\n");
+        fprintf(sFile, "Replication-%d\n", rep+1);
 		fprintf(stdout, "\n====================================================================================================================================\n");
 		fprintf(stdout, "Replication-%d\n", rep+1);
 
@@ -86,8 +90,15 @@ int algo(oneProblem *orig, timeType *tim, stocType *stoc, string inputDir, strin
 
 		fprintf(sFile, "\n====================================================================================================================================\n");
 		fprintf(sFile, "\n----------------------------------------- Compromise solution --------------------------------------\n\n");
-		fprintf(sFile, "\n====================================================================================================================================\n");
-		fprintf(sFile, "\n----------------------------------------- Compromise solution --------------------------------------\n\n");
+        
+        printf("\n----------------------------------------- Compromise solution --------------------------------------\n\n");
+        
+        /* Write out the solution */
+        for (j = 1; j < prob[0]->num->cols; j++) {
+           fprintf (sFile, "%-16s: ", orig->cname[j]);
+           fprintf (sFile, "%4.6lf\n", batch->compromiseX[j]);
+        }
+        
 		/* Evaluate the compromise solution */
 		evaluate(sFile, stoc, prob, cell->subprob, batch->compromiseX);
 

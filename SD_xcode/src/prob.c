@@ -53,8 +53,8 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 		if ( t < tim->numStages - 1 ) {
 			prob[t]->sp->mar = prob[t]->sp->marsz = tim->row[t+1] - tim->row[t];
 			prob[t]->sp->mac = prob[t]->sp->macsz = tim->col[t+1] - tim->col[t];
-			prob[t]->sp->rstorsz = orig->rname[tim->row[t+1]] - orig->rname[tim->row[t]];
-			prob[t]->sp->cstorsz = orig->cname[tim->col[t+1]] - orig->cname[tim->col[t]];
+			prob[t]->sp->rstorsz = (int) (orig->rname[tim->row[t+1]] - orig->rname[tim->row[t]]);
+			prob[t]->sp->cstorsz = (int) (orig->cname[tim->col[t+1]] - orig->cname[tim->col[t]]);
 			rOffset += prob[t]->sp->rstorsz;
 			cOffset += prob[t]->sp->cstorsz;
 		}
@@ -164,7 +164,7 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 			prob[t]->sp->cstore[m++] = *q;
 
 		/* copy column information for non-terminal stage */
-		cOffset = prob[t]->sp->cstore - orig->cname[tim->col[t]];
+		//cOffset = prob[t]->sp->cstore - orig->cname[tim->col[t]];
 		for ( m = tim->col[t]; m < tim->col[t+1]; m++ ) {
 			k = m - tim->col[t];
 			prob[t]->dBar->val[prob[t]->dBar->cnt+1] = orig->objx[m];
@@ -178,7 +178,7 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 			else if ( orig->ctype[m] == 'B' )
 				prob[t]->sp->numBin++;
 			prob[t]->sp->ctype[k] = orig->ctype[m];
-			prob[t]->sp->cname[k] = orig->cname[m] + cOffset;
+			prob[t]->sp->cname[k] = orig->cname[m] + (prob[t]->sp->cstore - orig->cname[tim->col[t]]);
 			prob[t]->sp->matcnt[k] = 0;
 			for ( i = orig->matbeg[m]; i < orig->matbeg[m]+orig->matcnt[m]; i++ ) {
 				if (orig->matind[i] < tim->row[t+1]) {
@@ -217,12 +217,12 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 			prob[t]->sp->rstore[m++] = *q;
 
 		/* copy row information for non-terminal stage */
-		rOffset = prob[t]->sp->rstore - orig->rname[tim->row[t]];
+		//rOffset = prob[t]->sp->rstore - orig->rname[tim->row[t]];
 		for ( m = tim->row[t]; m < tim->row[t+1]; m++ ) {
 			k = m - tim->row[t];
 			prob[t]->sp->rhsx[k] = orig->rhsx[m];
 			prob[t]->sp->senx[k] = orig->senx[m];
-			prob[t]->sp->rname[k] = orig->rname[m]+rOffset;
+			prob[t]->sp->rname[k] = orig->rname[m]+(prob[t]->sp->rstore - orig->rname[tim->row[t]]);
 			prob[t]->bBar->val[prob[t]->bBar->cnt+1] = orig->rhsx[m];
 			prob[t]->bBar->col[prob[t]->bBar->cnt+1] = m - tim->row[t]+1;
 			prob[t]->bBar->cnt++;
@@ -235,7 +235,7 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 	for ( q = orig->cname[tim->col[t]]; q < orig->cname[0] + orig->cstorsz; q++ )
 		prob[t]->sp->cstore[m++] = *q;
 
-	cOffset = prob[t]->sp->cstore - orig->cname[tim->col[t]];
+	//cOffset = prob[t]->sp->cstore - orig->cname[tim->col[t]];
 	for ( m = tim->col[t]; m < orig->mac; m++ ) {
 		k = m - tim->col[t];
 		prob[t]->dBar->val[prob[t]->dBar->cnt+1] = orig->objx[m];
@@ -251,7 +251,7 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 		}
 		else
 			prob[t]->sp->ctype[k] = orig->ctype[m];
-		prob[t]->sp->cname[k] = orig->cname[m] + cOffset;
+		prob[t]->sp->cname[k] = orig->cname[m] + (prob[t]->sp->cstore - orig->cname[tim->col[t]]);
 		prob[t]->sp->matcnt[k] = 0;
 		if ( orig->matcnt[m] > 0 )
 			for ( i = orig->matbeg[m]; i < orig->matbeg[m]+orig->matcnt[m]; i++ ) {
@@ -279,12 +279,12 @@ probType **newProb(oneProblem *orig, stocType *stoc, timeType *tim, vector lb, d
 	for ( q = orig->rname[tim->row[t]]; q < orig->rname[0] + orig->rstorsz; q++ )
 		prob[t]->sp->rstore[m++] = *q;
 
-	rOffset = prob[t]->sp->rstore - orig->rname[tim->row[t]];
+	//rOffset = prob[t]->sp->rstore - orig->rname[tim->row[t]];
 	for ( m = tim->row[t]; m < orig->mar; m++ ) {
 		k = m - tim->row[t];
 		prob[t]->sp->rhsx[k] = orig->rhsx[m];
 		prob[t]->sp->senx[k] = orig->senx[m];
-		prob[t]->sp->rname[k] = orig->rname[m]+rOffset;
+		prob[t]->sp->rname[k] = orig->rname[m] + (prob[t]->sp->rstore - orig->rname[tim->row[t]]);
 		prob[t]->bBar->val[prob[t]->bBar->cnt+1] = orig->rhsx[m];
 		prob[t]->bBar->col[prob[t]->bBar->cnt+1] = m - tim->row[t]+1;
 		prob[t]->bBar->cnt++;
@@ -485,7 +485,7 @@ vector meanProblem(oneProblem *orig, stocType *stoc) {
 		errMsg("setup", "meanProblem", "failed to setup the mean problem", 0);
 		return NULL;
 	}
-    //Jiajun TODO:  No need, since RHS is constant
+    
 	/* change the coefficients and right-hand side to mean values */
 	for (n = 0; n < stoc->numOmega; n++ ) {
 		status = changeCoef(orig->lp, stoc->row[n], stoc->col[n], stoc->mean[n]);
@@ -625,11 +625,11 @@ vector calcLowerBound(oneProblem *orig, timeType *tim, stocType *stoc) {
 			alpha = 0.0;
 			for ( n = 1; n <= bBar->cnt; n++ )
 				alpha += duals[bBar->col[n]+row] * bBar->val[n];
-			for (n = 0; n <= col + 2; n++)
+			for (n = 0; n <= col; n++)
 				beta[n] = 0.0;
 			for (n = 1; n <= Cbar->cnt; n++)
 				beta[Cbar->col[n]] = beta[Cbar->col[n]] + duals[row + Cbar->row[n]] * Cbar->val[n];
-			beta[col + 2] = -1;
+			//beta[col + 2] = -1;
 
 			/* use mean-cut coefficients to create the lower-bounding problem */
 			for (n = 0; n < col; n++) {
@@ -672,7 +672,7 @@ vector calcLowerBound(oneProblem *orig, timeType *tim, stocType *stoc) {
 
 		printf("%0.3lf\t", lb[t-1]);
 	}
-	lb[t-1] = 0.0;
+	//lb[t-1] = 0.0;
 	printf("\n");
 
 	mem_free(indices);

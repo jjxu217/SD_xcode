@@ -13,9 +13,9 @@
 #include "smps.h"
 #include "prob.h"
 
-#undef ALGO_CHECK
-#undef STOCH_CHECK
-#undef BASIS_CHECK
+//#undef ALGO_CHECK
+//#undef STOCH_CHECK
+//#undef BASIS_CHECK
 
 /* To save time and space, Pi x b and Pi x C are calculated as soon as possible and stored in structures like sigma and delta.  Towards this end,
  * pixbCType represents a single calculation of pi X b (which is a scalar) and pi X C (which is a vector).*/

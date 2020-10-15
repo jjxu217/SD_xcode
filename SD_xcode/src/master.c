@@ -389,17 +389,16 @@ oneProblem *newMaster(oneProblem *orig, double lb) {
 	strcpy(master->objname, orig->objname);     /* Copy objective name */
 
 	/* Copy problem's column and row names. Calculate difference in pointers for master/copy row and column names. */
-	i = 0;
-	for (q = orig->cname[0]; q < orig->cname[0] + orig->cstorsz; q++)
-		master->cstore[i++] = *q;
-	colOffset = master->cstore - orig->cname[0];
+    for (i = 0; i < orig->cstorsz; i++){
+        master->cstore[i] = orig->cstore[i];
+    }
 
-	if ( master->mar > 0 ) {
-		i = 0;
-		for (q = orig->rname[0]; q < orig->rname[0] + orig->rstorsz; q++)
-			master->rstore[i++] = *q;
-		rowOffset = master->rstore - orig->rname[0];
-	}
+    if ( master->mar > 0 ) {
+        for (i = 0; i < orig->rstorsz; i++){
+            master->rstore[i] = orig->rstore[i];
+        }
+        //rowOffset = master->rstore - orig->rstore;
+    }
 
 	/* Copy the all column information from the original master problem */
 	cnt = 0;
@@ -408,10 +407,14 @@ oneProblem *newMaster(oneProblem *orig, double lb) {
 		master->ctype[j] = orig->ctype[j];		/* Copy the decision variable type */
 		master->bdu[j] = orig->bdu[j];			/* Copy the upper bound and lower bound */
 		master->bdl[j] = orig->bdl[j];
-		master->cname[j] = orig->cname[j] + colOffset; /* Copy column names, offset by length */
+        /* Copy column names, offset by length */
+        if (j == 0)
+            master->cname[0] = master->cstore;
+        else
+            master->cname[j] = master->cname[j - 1] + (orig->cname[j] - orig->cname[j - 1]);
 		master->matbeg[j] = cnt;				/* Copy the master sparse matrix beginning position of each column */
 		master->matcnt[j] = orig->matcnt[j];	/* Copy the sparse matrix non-zero element count */
-		master->ctype[j] = orig->ctype[j];
+		//master->ctype[j] = orig->ctype[j];
 		/* Loop through all non-zero elements in this column */
 		for (idx = orig->matbeg[j]; idx < orig->matbeg[j] + orig->matcnt[j]; idx++) {
 			master->matval[cnt] = orig->matval[idx];	/* Copy the non-zero coefficient */
@@ -424,13 +427,17 @@ oneProblem *newMaster(oneProblem *orig, double lb) {
 	for (r = 0; r < orig->mar; r++) {
 		master->rhsx[r] = orig->rhsx[r];		/* Copy the right hand side value */
 		master->senx[r] = orig->senx[r];		/* Copy the constraint sense */
-		master->rname[r] = orig->rname[r] + rowOffset;	/* Copy row names, offset by length */
+		/* Copy row names, offset by length */
+        if (r == 0)
+            master->rname[0] = master->rstore;
+        else
+            master->rname[r] = orig->rname[r - 1] + (orig->rname[r] - orig->rname[r - 1]);
 	}
 
 	/* Initialize information for the extra column in the new master. */
-	colOffset = orig->cstorsz;
+	//colOffset = orig->cstorsz;
 	strcpy(master->cstore + orig->cstorsz, "eta");
-	master->cname[orig->mac] = master->cstore + colOffset;
+	master->cname[orig->mac] = master->cstore + orig->cstorsz;
 	master->objx[orig->mac] = 1.0;			// orig->mac is the last column in the original master
 	master->ctype[orig->mac] = 'C';
 	master->bdu[orig->mac] = INFBOUND;

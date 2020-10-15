@@ -9,7 +9,7 @@
 #include "solver.h"
 #include <ilcplex/cplex.h>
 
-#define DEBUG 1
+
 
 extern string 	outputDir;
 ENVptr	env = NULL;

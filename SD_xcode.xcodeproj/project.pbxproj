@@ -51,6 +51,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7E19C873243FCD8A00B41E88 /* ad218.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ad218.cor; sourceTree = "<group>"; };
+		7E19C874243FCD8A00B41E88 /* ad218.sto */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ad218.sto; sourceTree = "<group>"; };
+		7E19C875243FCD8A00B41E88 /* ad218.tim */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ad218.tim; sourceTree = "<group>"; };
 		7E84D1782245B6C700ABFE6D /* SUFL_5_5.tim */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_5_5.tim; sourceTree = "<group>"; };
 		7E84D1792245B6C700ABFE6D /* SUFL_5_5.sto */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_5_5.sto; sourceTree = "<group>"; };
 		7E84D17A2245B6C700ABFE6D /* SUFL_5_5.cor */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SUFL_5_5.cor; sourceTree = "<group>"; };
@@ -293,6 +296,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7E19C872243FCD8A00B41E88 /* ad218 */ = {
+			isa = PBXGroup;
+			children = (
+				7E19C873243FCD8A00B41E88 /* ad218.cor */,
+				7E19C874243FCD8A00B41E88 /* ad218.sto */,
+				7E19C875243FCD8A00B41E88 /* ad218.tim */,
+			);
+			path = ad218;
+			sourceTree = "<group>";
+		};
 		7E84D1772245B6C700ABFE6D /* SUFL_5_5 */ = {
 			isa = PBXGroup;
 			children = (
@@ -334,6 +347,7 @@
 		7ECD26432238B32B00F11974 /* spInput */ = {
 			isa = PBXGroup;
 			children = (
+				7E19C872243FCD8A00B41E88 /* ad218 */,
 				7E84D1772245B6C700ABFE6D /* SUFL_5_5 */,
 				7ECD26442238B32B00F11974 /* pltexpA3_16 */,
 				7ECD26482238B32B00F11974 /* cap41 */,
@@ -1145,8 +1159,12 @@
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					"SETUP_CHECK=1",
 					"DEBUG=1",
 					"$(inherited)",
+					"ALGO_CHECK=1",
+					"DECOMPOSE_CHECK=1",
+					"STOCH_CHECK=1",
 				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;

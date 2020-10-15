@@ -338,7 +338,7 @@ stocType *readStoc(string inputDir, string probName, oneProblem *orig, timeType 
 	string 	*rvRows = NULL, *rvCols = NULL, *fields = NULL;
 	char	probpath[2*BLOCKSIZE], line[BLOCKSIZE], fieldType;
 	FILE	*fptr;
-	int		maxOmegas = 1000, maxVals = 4000, n, numFields, maxFields = 10;
+	int		maxOmegas = 1500, maxVals = 4000, n, numFields, maxFields = 10, maxGroups = 60;
 
 	/* Locate the problem sto file */
 	sprintf(probpath, "%s%s/%s.sto", inputDir, probName, probName);
@@ -368,9 +368,9 @@ stocType *readStoc(string inputDir, string probName, oneProblem *orig, timeType 
 		errMsg("allocation", "readStoc", "stoc->row", 0);
 	if ( !(stoc->mean = (vector) arr_alloc(maxOmegas, double)) )
 		errMsg("allocation", "readStoc", "stoc->mean", 0);
-	if ( !(stoc->groupBeg = (intvec) arr_alloc(maxFields, int)) )
+	if ( !(stoc->groupBeg = (intvec) arr_alloc(maxGroups, int)) )
 		errMsg("allocation", "readStoc", "stoc->groupBeg", 0);
-	if ( !(stoc->numPerGroup = (intvec) arr_alloc(maxFields, int)) )
+	if ( !(stoc->numPerGroup = (intvec) arr_alloc(maxGroups, int)) )
 		errMsg("allocation", "readStoc", "stoc->numPerGroup", 0);
 	stoc->numOmega = 0;
 	stoc->numGroups = 0;

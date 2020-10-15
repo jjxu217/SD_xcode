@@ -34,7 +34,8 @@ int solveSubprob(probType *prob, oneProblem *subproblem, vector Xvect, basisType
 		}
 	}
 
-#if defined(ALGO_CHECK)
+#if defined(DEBUG)
+    fflush(NULL);
 	writeProblem(subproblem->lp, "subproblem.lp");
 #endif
 
@@ -237,15 +238,16 @@ oneProblem *newSubprob(oneProblem *sp) {
 		return NULL;
 	}
 
-#if 0
-	int     status;
-	char probName[NAMESIZE];
-	sprintf(probName,"newSubprob%d.lp", agent);
-	status = writeProblem(scell->sp->lp, probName);
-	if ( status ) {
-		errMsg("write problem", "new_subprob", "failed to write subproblems problem to file",0);
-		return NULL;
-	}
+#if defined(DEBUG)
+    //writeProblem(sp->lp, "subproblem_in_.lp");
+//	int     status;
+//	char probName[NAMESIZE];
+//	sprintf(probName,"newSubprob%d.lp", agent);
+//	status = writeProblem(scell->sp->lp, probName);
+//	if ( status ) {
+//		errMsg("write problem", "new_subprob", "failed to write subproblems problem to file",0);
+//		return NULL;
+//	}
 #endif
 
 	return sp;
